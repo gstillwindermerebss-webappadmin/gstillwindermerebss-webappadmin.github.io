@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Office Attendance Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+
+  <!-- AUTH OVERLAY -->
+  <div id="auth-screen" class="fixed inset-0 bg-slate-900 bg-opacity-95 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+      <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-slate-800 mb-2">Attendance Portal</h2>
+      <p class="text-sm text-slate-500 mb-6">Enter the shared team password to access attendance records.</p>
+      
+      <form id="auth-form" onsubmit="handleLogin(event)">
+        <input type="password" id="auth-password" placeholder="Shared Password" required
+          class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4 text-center text-lg">
+        <button type="submit" 
+          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-md">
+          Unlock Portal
+        </button>
+      </form>
+      <p id="auth-error" class="text-red-500 text-xs mt-3 hidden">Incorrect password. Please try again.</p>
+    </div>
+  </div>
+
+  <!-- MAIN APP CONTAINER -->
+  <div id="app" class="hidden">
+    <!-- NAVIGATION BAR -->
+    <nav class="bg-indigo-700 text-white shadow-lg">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="showView('offices-view')">
+          <i class="fa-solid fa-building-user text-2xl text-indigo-200"></i>
+          <span class="font-bold text-xl tracking-tight">Attendance Tracker</span>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <button onclick="showView('offices-view')" class="px-3 py-2 rounded-lg bg-indigo-800 hover:bg-indigo-600 text-sm font-medium transition">
+            <i class="fa-solid fa-building mr-1"></i> Offices
+          </button>
+          <button onclick="showView('reports-view')" class="px-3 py-2 rounded-lg bg-indigo-800 hover:bg-indigo-600 text-sm font-medium transition">
+            <i class="fa-solid fa-chart-line mr-1"></i> Attendance Data
+          </button>
+          <button onclick="openSettingsModal()" class="p-2 rounded-lg bg-indigo-800 hover:bg-indigo-600 transition" title="GitHub Sync Settings">
+            <i class="fa-solid fa-gear"></i>
+          </button>
+          <button onclick="logout()" class="p-2 rounded-lg bg-indigo-900 hover:bg-red-600 transition" title="Lock App">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+
+      <!-- VIEW 1: OFFICE LIST (MAIN PAGE) -->
+      <section id="offices-view">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-800">Select an Office</h1>
+            <p class="text-slate-500 text-sm">Choose an office location to mark attendance or manage roster.</p>
+          </div>
+          <button onclick="openOfficeModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow flex items-center">
+            <i class="fa-solid fa-plus mr-2"></i> Add Office
+          </button>
+        </div>
+
+        <div id="offices-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Office Cards injected here dynamically -->
+        </div>
+      </section>
+
+      <!-- VIEW 2: OFFICE DETAIL & AGENTS LIST -->
+      <section id="office-detail-view" class="hidden">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div class="flex items-center space-x-4">
+            <button onclick="showView('offices-view')" class="p-2 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 transition">
+              <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <div>
+              <h1 id="selected-office-title" class="text-2xl font-bold text-slate-800">Office Name</h1>
+              <p class="text-slate-500 text-sm">Mark attendance for today: <span id="current-date-badge" class="font-semibold text-indigo-600"></span></p>
+            </div>
+          </div>
+          <button onclick="openAgentModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow flex items-center">
+            <i class="fa-solid fa-user-plus mr-2"></i> Add Agent
+          </button>
+        </div>
+
+        <!-- AGENTS TABLE / LIST -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-slate-200">
+          <div id="agents-list" class="divide-y divide-slate-200">
+            <!-- Agent items injected dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: ATTENDANCE DATA & REPORTS -->
+      <section id="reports-view" class="hidden">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-800">Attendance Data & Reports</h1>
+            <p class="text-slate-500 text-sm">Filter attendance records by office, month, and year.</p>
+          </div>
+          <button onclick="exportJSONData()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center">
+            <i class="fa-solid fa-download mr-2"></i> Export JSON
+          </button>
+        </div>
+
+        <!-- FILTERS BAR -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-center">
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Office</label>
+            <select id="filter-office" onchange="renderReports()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500">
+              <option value="ALL">All Offices</option>
+            </select>
+          </div>
+          <div class="w-36">
+            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Month</label>
+            <select id="filter-month" onchange="renderReports()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500">
+              <!-- Options populated by JS -->
+            </select>
+          </div>
+          <div class="w-28">
+            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Year</label>
+            <select id="filter-year" onchange="renderReports()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500">
+              <!-- Options populated by JS -->
+            </select>
+          </div>
+        </div>
+
+        <!-- REPORTS TABLE -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-slate-200">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-600 uppercase text-xs tracking-wider border-b border-slate-200">
+                  <th class="p-4">Date</th>
+                  <th class="p-4">Agent Name</th>
+                  <th class="p-4">Office</th>
+                  <th class="p-4 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="reports-table-body" class="divide-y divide-slate-200 text-sm">
+                <!-- Report rows injected dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL: ADD/EDIT OFFICE -->
+  <div id="office-modal" class="fixed inset-0 bg-slate-900 bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+      <h3 id="office-modal-title" class="text-xl font-bold text-slate-800 mb-4">Add Office</h3>
+      <input type="hidden" id="office-id">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-slate-700 mb-1">Office Name</label>
+        <input type="text" id="office-name" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500" placeholder="e.g. New York Headquarters">
+      </div>
+      <div class="flex justify-end space-x-3">
+        <button onclick="closeModal('office-modal')" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-100">Cancel</button>
+        <button onclick="saveOffice()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD/EDIT AGENT -->
+  <div id="agent-modal" class="fixed inset-0 bg-slate-900 bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+      <h3 id="agent-modal-title" class="text-xl font-bold text-slate-800 mb-4">Add Agent</h3>
+      <input type="hidden" id="agent-id">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-slate-700 mb-1">Agent Full Name</label>
+        <input type="text" id="agent-name" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500" placeholder="e.g. Sarah Jenkins">
+      </div>
+      <div class="flex justify-end space-x-3">
+        <button onclick="closeModal('agent-modal')" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-100">Cancel</button>
+        <button onclick="saveAgent()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GITHUB SYNC SETTINGS -->
+  <div id="settings-modal" class="fixed inset-0 bg-slate-900 bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
+      <h3 class="text-xl font-bold text-slate-800 mb-2">GitHub Pages Auto-Sync</h3>
+      <p class="text-xs text-slate-500 mb-4">Provide a GitHub Fine-Grained Token to automatically commit attendance changes directly to your repository JSON file.</p>
+
+      <div class="space-y-3 mb-6">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Shared Password</label>
+          <input type="text" id="setting-password" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">GitHub Owner / Username</label>
+          <input type="text" id="setting-gh-owner" placeholder="e.g. your-username" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Repository Name</label>
+          <input type="text" id="setting-gh-repo" placeholder="e.g. attendance-tracker" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">GitHub Personal Access Token (PAT)</label>
+          <input type="password" id="setting-gh-token" placeholder="ghp_xxxxxxxxxxxx" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center">
+        <button onclick="importJSONTrigger()" class="text-xs text-indigo-600 hover:underline">Import data.json file</button>
+        <input type="file" id="import-json-file" class="hidden" accept=".json" onchange="importJSONFile(event)">
+        
+        <div class="flex space-x-2">
+          <button onclick="closeModal('settings-modal')" class="px-3 py-1.5 border rounded-lg text-xs">Cancel</button>
+          <button onclick="saveSettings()" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION LOGIC JS -->
+  <script>
+    // --- APP STATE ---
+    const DEFAULT_DATA = {
+      password: "admin", // Default shared password
+      githubConfig: { owner: "", repo: "", token: "" },
+      offices: [
+        { id: "off_1", name: "Downtown Office" },
+        { id: "off_2", name: "Westside Branch" }
+      ],
+      agents: [
+        { id: "ag_1", officeId: "off_1", name: "Alice Johnson" },
+        { id: "ag_2", officeId: "off_1", name: "Bob Smith" },
+        { id: "ag_3", officeId: "off_2", name: "Charlie Davis" }
+      ],
+      attendance: [] // Array of { id, agentId, officeId, date }
+    };
+
+    let appData = { ...DEFAULT_DATA };
+    let currentOfficeId = null;
+
+    // --- INITIALIZATION ---
+    window.addEventListener("DOMContentLoaded", async () => {
+      await loadInitialData();
+      initDateBadgesAndFilters();
+    });
+
+    async function loadInitialData() {
+      // 1. Check local storage first
+      const local = localStorage.getItem("attendance_app_data");
+      if (local) {
+        try { appData = JSON.parse(local); } catch(e) {}
+      } else {
+        // 2. Try fetching data.json from server
+        try {
+          const resp = await fetch("data.json");
+          if (resp.ok) {
+            appData = await resp.json();
+            saveLocalState();
+          }
+        } catch (e) {
+          console.log("No initial data.json found, using defaults.");
+        }
+      }
+    }
+
+    function saveLocalState() {
+      localStorage.setItem("attendance_app_data", JSON.stringify(appData));
+      syncToGitHub();
+    }
+
+    // --- GITHUB PAGES AUTO-COMMIT SYNC ---
+    async function syncToGitHub() {
+      const cfg = appData.githubConfig;
+      if (!cfg || !cfg.owner || !cfg.repo || !cfg.token) return;
+
+      const path = "data.json";
+      const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
+
+      try {
+        let sha = "";
+        const getResp = await fetch(url, {
+          headers: { "Authorization": `token ${cfg.token}` }
+        });
+        if (getResp.ok) {
+          const fileInfo = await getResp.json();
+          sha = fileInfo.sha;
+        }
+
+        const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(appData, null, 2))));
+        await fetch(url, {
+          method: "PUT",
+          headers: {
+            "Authorization": `token ${cfg.token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: "Update attendance data via Web App",
+            content: contentBase64,
+            sha: sha || undefined
+          })
+        });
+      } catch (err) {
+        console.error("GitHub Sync Error:", err);
+      }
+    }
+
+    // --- AUTHENTICATION ---
+    function handleLogin(e) {
+      e.preventDefault();
+      const pass = document.getElementById("auth-password").value;
+      if (pass === appData.password) {
+        document.getElementById("auth-screen").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+        showView("offices-view");
+      } else {
+        document.getElementById("auth-error").classList.remove("hidden");
+      }
+    }
+
+    function logout() {
+      document.getElementById("auth-screen").classList.remove("hidden");
+      document.getElementById("app").classList.add("hidden");
+      document.getElementById("auth-password").value = "";
+    }
+
+    // --- NAVIGATION & VIEWS ---
+    function showView(viewId) {
+      document.getElementById("offices-view").classList.add("hidden");
+      document.getElementById("office-detail-view").classList.add("hidden");
+      document.getElementById("reports-view").classList.add("hidden");
+
+      document.getElementById(viewId).classList.remove("hidden");
+
+      if (viewId === "offices-view") renderOffices();
+      if (viewId === "reports-view") renderReports();
+    }
+
+    // --- DATE HELPERS ---
+    function getTodayString() {
+      const today = new Date();
+      return today.toISOString().split("T")[0]; // YYYY-MM-DD
+    }
+
+    function initDateBadgesAndFilters() {
+      const todayStr = getTodayString();
+      document.getElementById("current-date-badge").innerText = todayStr;
+
+      // Populate Month / Year filters
+      const monthSelect = document.getElementById("filter-month");
+      const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      monthSelect.innerHTML = months.map((m, idx) => `<option value="${idx}">${m}</option>`).join("");
+      monthSelect.value = new Date().getMonth();
+
+      const yearSelect = document.getElementById("filter-year");
+      const currentYear = new Date().getFullYear();
+      let yearsHtml = "";
+      for (let y = currentYear - 2; y <= currentYear + 1; y++) {
+        yearsHtml += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`;
+      }
+      yearSelect.innerHTML = yearsHtml;
+    }
+
+    // --- OFFICE MANAGEMENT ---
+    function renderOffices() {
+      const grid = document.getElementById("offices-grid");
+      const filterOfficeSelect = document.getElementById("filter-office");
+      grid.innerHTML = "";
+
+      let filterOptions = `<option value="ALL">All Offices</option>`;
+
+      appData.offices.forEach(office => {
+        filterOptions += `<option value="${office.id}">${office.name}</option>`;
+        const agentCount = appData.agents.filter(a => a.officeId === office.id).length;
+        
+        // Count today's attendance
+        const todayStr = getTodayString();
+        const attendedToday = appData.attendance.filter(att => att.officeId === office.id && att.date === todayStr).length;
+
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-xl shadow-md border border-slate-200 p-6 flex flex-col justify-between hover:shadow-lg transition";
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="font-bold text-xl text-slate-800 cursor-pointer hover:text-indigo-600" onclick="openOfficeDetail('${office.id}')">${office.name}</h3>
+              <div class="flex space-x-2">
+                <button onclick="openOfficeModal('${office.id}')" class="text-slate-400 hover:text-indigo-600 p-1"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteOffice('${office.id}')" class="text-slate-400 hover:text-red-600 p-1"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+            <p class="text-sm text-slate-500 mb-2"><i class="fa-solid fa-users mr-1"></i> ${agentCount} Agents registered</p>
+            <p class="text-sm font-medium text-emerald-600"><i class="fa-solid fa-circle-check mr-1"></i> ${attendedToday} Attended Today</p>
+          </div>
+          <button onclick="openOfficeDetail('${office.id}')" class="mt-6 w-full bg-slate-100 hover:bg-indigo-50 text-indigo-700 font-semibold py-2 rounded-lg transition text-sm">
+            Select Office &rarr;
+          </button>
+        `;
+        grid.appendChild(card);
+      });
+
+      filterOfficeSelect.innerHTML = filterOptions;
+    }
+
+    function openOfficeModal(id = null) {
+      document.getElementById("office-id").value = id || "";
+      document.getElementById("office-name").value = id ? appData.offices.find(o => o.id === id).name : "";
+      document.getElementById("office-modal-title").innerText = id ? "Edit Office" : "Add Office";
+      document.getElementById("office-modal").classList.remove("hidden");
+    }
+
+    function saveOffice() {
+      const id = document.getElementById("office-id").value;
+      const name = document.getElementById("office-name").value.trim();
+      if (!name) return;
+
+      if (id) {
+        const off = appData.offices.find(o => o.id === id);
+        if (off) off.name = name;
+      } else {
+        appData.offices.push({ id: "off_" + Date.now(), name });
+      }
+
+      saveLocalState();
+      closeModal("office-modal");
+      renderOffices();
+    }
+
+    function deleteOffice(id) {
+      if (confirm("Are you sure? This will remove all associated agents and attendance history.")) {
+        appData.offices = appData.offices.filter(o => o.id !== id);
+        appData.agents = appData.agents.filter(a => a.officeId !== id);
+        appData.attendance = appData.attendance.filter(a => a.officeId !== id);
+        saveLocalState();
+        renderOffices();
+      }
+    }
+
+    // --- AGENTS & DAILY ATTENDANCE ---
+    function openOfficeDetail(officeId) {
+      currentOfficeId = officeId;
+      const office = appData.offices.find(o => o.id === officeId);
+      document.getElementById("selected-office-title").innerText = office.name;
+      showView("office-detail-view");
+      renderAgents();
+    }
+
+    function renderAgents() {
+      const list = document.getElementById("agents-list");
+      list.innerHTML = "";
+
+      const officeAgents = appData.agents.filter(a => a.officeId === currentOfficeId);
+      const todayStr = getTodayString();
+
+      if (officeAgents.length === 0) {
+        list.innerHTML = `<div class="p-8 text-center text-slate-400">No agents added to this office yet.</div>`;
+        return;
+      }
+
+      officeAgents.forEach(agent => {
+        const isAttended = appData.attendance.some(att => att.agentId === agent.id && att.date === todayStr);
+
+        const item = document.createElement("div");
+        item.className = "p-4 flex items-center justify-between hover:bg-slate-50 transition";
+        item.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600">
+              ${agent.name.charAt(0)}
+            </div>
+            <div>
+              <h4 class="font-semibold text-slate-800">${agent.name}</h4>
+              <span class="text-xs ${isAttended ? 'text-emerald-600 font-semibold' : 'text-slate-400'}">
+                ${isAttended ? 'Present Today' : 'Not marked present'}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-3">
+            <button onclick="toggleAttendance('${agent.id}')" 
+              class="px-4 py-2 rounded-lg font-medium text-sm transition shadow-sm ${
+                isAttended 
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200' 
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+              }">
+              <i class="fa-solid ${isAttended ? 'fa-check-circle' : 'fa-user-check'} mr-1.5"></i>
+              ${isAttended ? 'Attended Today' : 'Mark Attended'}
+            </button>
+            <button onclick="openAgentModal('${agent.id}')" class="text-slate-400 hover:text-indigo-600 p-2"><i class="fa-solid fa-pen"></i></button>
+            <button onclick="deleteAgent('${agent.id}')" class="text-slate-400 hover:text-red-600 p-2"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function toggleAttendance(agentId) {
+      const todayStr = getTodayString();
+      const existingIdx = appData.attendance.findIndex(att => att.agentId === agentId && att.date === todayStr);
+
+      if (existingIdx > -1) {
+        // Toggle OFF
+        appData.attendance.splice(existingIdx, 1);
+      } else {
+        // Toggle ON
+        appData.attendance.push({
+          id: "att_" + Date.now(),
+          agentId: agentId,
+          officeId: currentOfficeId,
+          date: todayStr
+        });
+      }
+
+      saveLocalState();
+      renderAgents();
+    }
+
+    function openAgentModal(id = null) {
+      document.getElementById("agent-id").value = id || "";
+      document.getElementById("agent-name").value = id ? appData.agents.find(a => a.id === id).name : "";
+      document.getElementById("agent-modal-title").innerText = id ? "Edit Agent" : "Add Agent";
+      document.getElementById("agent-modal").classList.remove("hidden");
+    }
+
+    function saveAgent() {
+      const id = document.getElementById("agent-id").value;
+      const name = document.getElementById("agent-name").value.trim();
+      if (!name) return;
+
+      if (id) {
+        const ag = appData.agents.find(a => a.id === id);
+        if (ag) ag.name = name;
+      } else {
+        appData.agents.push({
+          id: "ag_" + Date.now(),
+          officeId: currentOfficeId,
+          name
+        });
+      }
+
+      saveLocalState();
+      closeModal("agent-modal");
+      renderAgents();
+    }
+
+    function deleteAgent(id) {
+      if (confirm("Delete this agent and their attendance history?")) {
+        appData.agents = appData.agents.filter(a => a.id !== id);
+        appData.attendance = appData.attendance.filter(a => a.agentId !== id);
+        saveLocalState();
+        renderAgents();
+      }
+    }
+
+    // --- REPORTS & FILTERING ---
+    function renderReports() {
+      const officeFilter = document.getElementById("filter-office").value;
+      const monthFilter = parseInt(document.getElementById("filter-month").value);
+      const yearFilter = parseInt(document.getElementById("filter-year").value);
+
+      const tableBody = document.getElementById("reports-table-body");
+      tableBody.innerHTML = "";
+
+      const filteredRecords = appData.attendance.filter(record => {
+        const recDate = new Date(record.date + "T00:00:00");
+        const matchesOffice = officeFilter === "ALL" || record.officeId === officeFilter;
+        const matchesMonth = recDate.getMonth() === monthFilter;
+        const matchesYear = recDate.getFullYear() === yearFilter;
+        return matchesOffice && matchesMonth && matchesYear;
+      });
+
+      if (filteredRecords.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-slate-400">No attendance data found for selected filters.</td></tr>`;
+        return;
+      }
+
+      // Sort by date descending
+      filteredRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      filteredRecords.forEach(record => {
+        const agent = appData.agents.find(a => a.id === record.agentId) || { name: "Deleted Agent" };
+        const office = appData.offices.find(o => o.id === record.officeId) || { name: "Deleted Office" };
+
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = `
+          <td class="p-4 font-medium text-slate-800">${record.date}</td>
+          <td class="p-4">${agent.name}</td>
+          <td class="p-4">${office.name}</td>
+          <td class="p-4 text-center">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+              Attended
+            </span>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    // --- SETTINGS & JSON EXPORT/IMPORT ---
+    function openSettingsModal() {
+      document.getElementById("setting-password").value = appData.password;
+      document.getElementById("setting-gh-owner").value = appData.githubConfig?.owner || "";
+      document.getElementById("setting-gh-repo").value = appData.githubConfig?.repo || "";
+      document.getElementById("setting-gh-token").value = appData.githubConfig?.token || "";
+      document.getElementById("settings-modal").classList.remove("hidden");
+    }
+
+    function saveSettings() {
+      appData.password = document.getElementById("setting-password").value.trim() || "admin";
+      appData.githubConfig = {
+        owner: document.getElementById("setting-gh-owner").value.trim(),
+        repo: document.getElementById("setting-gh-repo").value.trim(),
+        token: document.getElementById("setting-gh-token").value.trim()
+      };
+      saveLocalState();
+      closeModal("settings-modal");
+      alert("Settings saved successfully!");
+    }
+
+    function exportJSONData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "data.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importJSONTrigger() {
+      document.getElementById("import-json-file").click();
+    }
+
+    function importJSONFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          appData = JSON.parse(e.target.result);
+          saveLocalState();
+          alert("Data imported successfully!");
+          location.reload();
+        } catch (err) {
+          alert("Invalid JSON file format.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add("hidden");
+    }
+  </script>
+</body>
+</html>
