@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roll Call — Office Attendance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEF0E7;
+    --paper-alt:#E3E6D9;
+    --surface:#FFFFFF;
+    --ink:#1C2420;
+    --ink-soft:#5B6459;
+    --line:#D3D6C6;
+    --line-strong:#B7BCA8;
+    --teal:#2B6B5E;
+    --teal-dark:#1F4E44;
+    --teal-tint:#E4EEEA;
+    --rust:#A6432E;
+    --rust-dark:#7E3122;
+    --rust-tint:#F4E4DF;
+    --amber:#B9822E;
+    --radius:3px;
+    --shadow: 0 1px 2px rgba(28,36,32,0.08), 0 1px 1px rgba(28,36,32,0.04);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-alt) 1px, transparent 1px);
+    background-size: 100% 32px;
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  button{font-family:inherit; cursor:pointer;}
+  ::selection{background:var(--teal); color:#fff;}
+
+  .wrap{max-width:920px; margin:0 auto; padding:0 20px 80px;}
+
+  /* Header */
+  header.topbar{
+    padding:36px 20px 22px;
+    max-width:920px;
+    margin:0 auto;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:16px;
+    border-bottom:2px solid var(--ink);
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand-mark{
+    width:46px; height:46px;
+    border:2.5px solid var(--ink);
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:11px;
+    letter-spacing:0.02em;
+    transform:rotate(-6deg);
+    flex-shrink:0;
+  }
+  .brand-text h1{
+    font-family:'Roboto Slab', serif;
+    font-weight:700;
+    font-size:28px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .brand-text p{
+    margin:2px 0 0;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+  }
+  .today-chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:right;
+    line-height:1.5;
+  }
+  .today-chip strong{color:var(--ink); font-weight:600;}
+
+  /* Breadcrumb / nav row */
+  .subnav{
+    max-width:920px; margin:0 auto;
+    padding:22px 20px 0;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .crumbs{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    letter-spacing:0.02em;
+  }
+  .crumbs .sep{margin:0 6px; color:var(--line-strong);}
+  .crumbs .current{color:var(--ink); font-weight:600;}
+
+  .btn{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:9px 15px;
+    border:1.5px solid var(--ink);
+    background:var(--surface);
+    color:var(--ink);
+    font-weight:600;
+    font-size:13.5px;
+    border-radius:var(--radius);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:hover{box-shadow:var(--shadow); transform:translateY(-1px);}
+  .btn:active{transform:translateY(0);}
+  .btn-teal{background:var(--teal); border-color:var(--teal); color:#fff;}
+  .btn-teal:hover{background:var(--teal-dark); border-color:var(--teal-dark);}
+  .btn-ghost{border-color:var(--line-strong); background:transparent; font-weight:500;}
+  .btn-ghost:hover{border-color:var(--ink);}
+  .btn-sm{padding:5px 10px; font-size:12px; border-radius:2px;}
+  .btn-rust{color:var(--rust-dark); border-color:var(--rust); background:var(--rust-tint);}
+  .btn-rust:hover{background:var(--rust); color:#fff;}
+  .btn-icon{padding:5px 9px;}
+  .btn-block{width:100%; justify-content:center;}
+  .spacer{flex:1;}
+
+  main#main{max-width:920px; margin:0 auto; padding:26px 20px 0;}
+
+  h2.section-title{
+    font-family:'Roboto Slab', serif;
+    font-size:21px;
+    margin:0 0 4px;
+    font-weight:700;
+  }
+  p.section-sub{
+    margin:0 0 22px;
+    font-size:13.5px;
+    color:var(--ink-soft);
+  }
+
+  /* Office cards (folder-tab style) */
+  .office-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(210px,1fr));
+    gap:16px;
+  }
+  .office-card{
+    position:relative;
+    background:var(--surface);
+    border:1.5px solid var(--ink);
+    border-radius:0 var(--radius) var(--radius) var(--radius);
+    padding:20px 16px 14px;
+    cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .office-card::before{
+    content:"";
+    position:absolute;
+    top:-9px; left:14px;
+    width:52px; height:9px;
+    background:var(--surface);
+    border:1.5px solid var(--ink);
+    border-bottom:none;
+    border-radius:3px 3px 0 0;
+  }
+  .office-card:hover{transform:translateY(-2px); box-shadow:var(--shadow);}
+  .office-card .oc-name{
+    font-family:'Roboto Slab', serif;
+    font-weight:700;
+    font-size:17px;
+    margin:0 0 8px;
+    padding-right:8px;
+  }
+  .office-card .oc-meta{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .office-card .oc-actions{
+    display:flex; gap:6px; margin-top:14px;
+  }
+  .empty-state{
+    border:1.5px dashed var(--line-strong);
+    border-radius:var(--radius);
+    padding:34px 20px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13.5px;
+  }
+  .empty-state strong{display:block; color:var(--ink); font-family:'Roboto Slab', serif; font-size:16px; margin-bottom:4px; font-weight:700;}
+
+  .add-tile{
+    border:1.5px dashed var(--line-strong);
+    border-radius:var(--radius);
+    display:flex; align-items:center; justify-content:center;
+    min-height:96px;
+    color:var(--ink-soft);
+    font-weight:600;
+    font-size:13.5px;
+    background:transparent;
+    transition:border-color .12s ease, color .12s ease;
+  }
+  .add-tile:hover{border-color:var(--teal); color:var(--teal-dark);}
+
+  /* Roster (agent list) */
+  .roster{
+    border:1.5px solid var(--ink);
+    border-radius:var(--radius);
+    overflow:hidden;
+    background:var(--surface);
+  }
+  .roster-row{
+    display:flex; align-items:center; gap:12px;
+    padding:13px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  .roster-row:last-child{border-bottom:none;}
+  .roster-row:nth-child(even){background:#FAFAF6;}
+  .agent-name{
+    font-weight:600;
+    font-size:14.5px;
+    flex:1;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .row-actions{display:flex; gap:6px; align-items:center;}
+
+  .stamp-btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:12px;
+    letter-spacing:0.03em;
+    padding:8px 14px;
+    border:1.5px solid var(--teal);
+    color:var(--teal-dark);
+    background:#fff;
+    border-radius:var(--radius);
+    text-transform:uppercase;
+    transition:background .12s ease, color .12s ease, transform .12s ease;
+    white-space:nowrap;
+  }
+  .stamp-btn:hover{background:var(--teal-tint);}
+  .stamp-btn.checked{
+    background:var(--teal-tint);
+    border-style:solid;
+    color:var(--teal-dark);
+  }
+  .stamp-mark{
+    display:inline-flex;
+    align-items:center; gap:7px;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:11.5px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    color:var(--teal-dark);
+    border:1.5px solid var(--teal-dark);
+    padding:6px 12px;
+    border-radius:2px;
+    transform:rotate(-2.5deg);
+    background:var(--teal-tint);
+    white-space:nowrap;
+  }
+  .stamp-mark .dot{width:6px; height:6px; border-radius:50%; background:var(--teal-dark);}
+  .undo-link{
+    font-size:11px;
+    color:var(--ink-soft);
+    text-decoration:underline;
+    background:none; border:none; padding:2px;
+  }
+  .undo-link:hover{color:var(--rust);}
+
+  /* Filters (data view) */
+  .filters{
+    display:flex; gap:10px; flex-wrap:wrap;
+    align-items:center;
+    background:var(--surface);
+    border:1.5px solid var(--ink);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:20px;
+  }
+  .filter-field{display:flex; flex-direction:column; gap:4px;}
+  .filter-field label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+  }
+  select{
+    font-family:'Work Sans', sans-serif;
+    font-size:13.5px;
+    font-weight:600;
+    padding:8px 10px;
+    border:1.5px solid var(--line-strong);
+    border-radius:var(--radius);
+    background:#fff;
+    color:var(--ink);
+  }
+  select:focus, input:focus{outline:2.5px solid var(--teal); outline-offset:1px;}
+
+  .summary-strip{
+    display:flex; gap:22px; flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+  .summary-item{
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .summary-item .num{font-size:26px; font-weight:600; color:var(--ink); display:block; line-height:1;}
+  .summary-item .lbl{font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft);}
+
+  table.ledger{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--surface);
+    border:1.5px solid var(--ink);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  table.ledger th{
+    text-align:left;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    padding:10px 14px;
+    border-bottom:1.5px solid var(--ink);
+    background:var(--paper-alt);
+  }
+  table.ledger td{
+    padding:11px 14px;
+    border-bottom:1px solid var(--line);
+    font-size:13.5px;
+    vertical-align:top;
+  }
+  table.ledger tr:last-child td{border-bottom:none;}
+  table.ledger .cell-office{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+  }
+  table.ledger .cell-count{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    color:var(--teal-dark);
+  }
+  table.ledger .cell-dates{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+
+  /* Modal */
+  .modal-backdrop{
+    position:fixed; inset:0;
+    background:rgba(28,36,32,0.45);
+    display:flex; align-items:center; justify-content:center;
+    z-index:100;
+    padding:20px;
+  }
+  .modal{
+    background:var(--surface);
+    border:1.5px solid var(--ink);
+    border-radius:var(--radius);
+    width:100%; max-width:380px;
+    padding:24px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+  }
+  .modal h3{
+    font-family:'Roboto Slab', serif;
+    margin:0 0 14px;
+    font-size:18px;
+    font-weight:700;
+  }
+  .modal label{
+    display:block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .modal input[type=text]{
+    width:100%;
+    padding:10px 12px;
+    border:1.5px solid var(--line-strong);
+    border-radius:var(--radius);
+    font-size:14.5px;
+    font-family:'Work Sans', sans-serif;
+    margin-bottom:18px;
+  }
+  .modal-actions{display:flex; gap:8px; justify-content:flex-end;}
+
+  footer.foot{
+    max-width:920px; margin:40px auto 0; padding:16px 20px;
+    border-top:1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+
+  @media (max-width:520px){
+    .brand-text h1{font-size:22px;}
+    .roster-row{flex-wrap:wrap;}
+    table.ledger{font-size:12px;}
+    table.ledger th, table.ledger td{padding:9px 8px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">R·C</div>
+    <div class="brand-text">
+      <h1>Roll Call</h1>
+      <p>Office attendance, tracked daily</p>
+    </div>
+  </div>
+  <div class="today-chip" id="todayChip"></div>
+</header>
+
+<div class="subnav">
+  <div class="crumbs" id="crumbs"></div>
+  <div class="spacer"></div>
+  <div id="navActions"></div>
+</div>
+
+<main id="main"></main>
+
+<footer class="foot">Data is stored locally in this browser · nothing leaves your device</footer>
+
+<div id="modalRoot"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "rollcall_data_v1";
+  var MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  var state = {
+    view: "home",            // home | office | data
+    officeId: null,
+    dataFilterOfficeId: "all",
+    dataMonth: (new Date()).getMonth(),
+    dataYear: (new Date()).getFullYear()
+  };
+
+  var data = loadData();
+
+  function loadData(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && Array.isArray(parsed.offices)) return parsed;
+      }
+    }catch(e){}
+    return { offices: [], agents: [], attendance: [] };
+  }
+
+  function saveData(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function uid(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  }
+
+  function todayStr(){
+    return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function el(html){
+    var t = document.createElement('template');
+    t.innerHTML = html.trim();
+    return t.content.firstChild;
+  }
+
+  // ---------- header bits ----------
+  function renderTodayChip(){
+    var d = new Date();
+    var opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+    document.getElementById('todayChip').innerHTML = 'Today<br><strong>' + d.toLocaleDateString(undefined, opts) + '</strong>';
+  }
+
+  function renderCrumbsAndNav(){
+    var crumbs = document.getElementById('crumbs');
+    var nav = document.getElementById('navActions');
+    var parts = [];
+
+    if(state.view === 'home'){
+      parts.push('<span class="current">Offices</span>');
+      nav.innerHTML = '<button class="btn btn-teal" id="btnAttendanceData">Attendance data</button>';
+    } else if(state.view === 'office'){
+      var office = data.offices.find(function(o){return o.id === state.officeId;});
+      parts.push('<a href="#" data-nav="home">Offices</a>');
+      parts.push('<span class="sep">/</span>');
+      parts.push('<span class="current">' + escapeHtml(office ? office.name : 'Office') + '</span>');
+      nav.innerHTML = '<button class="btn btn-ghost btn-sm" id="btnBackHome">&larr; All offices</button>';
+    } else if(state.view === 'data'){
+      parts.push('<a href="#" data-nav="home">Offices</a>');
+      parts.push('<span class="sep">/</span>');
+      parts.push('<span class="current">Attendance data</span>');
+      nav.innerHTML = '<button class="btn btn-ghost btn-sm" id="btnBackHome">&larr; All offices</button>';
+    }
+    crumbs.innerHTML = parts.join('');
+
+    var homeLinks = crumbs.querySelectorAll('[data-nav="home"]');
+    homeLinks.forEach(function(a){
+      a.addEventListener('click', function(e){ e.preventDefault(); goHome(); });
+    });
+    var backBtn = document.getElementById('btnBackHome');
+    if(backBtn) backBtn.addEventListener('click', goHome);
+    var dataBtn = document.getElementById('btnAttendanceData');
+    if(dataBtn) dataBtn.addEventListener('click', function(){ state.view='data'; render(); });
+  }
+
+  function goHome(){ state.view='home'; state.officeId=null; render(); }
+
+  // ---------- MODAL ----------
+  function openModal(title, placeholder, initialValue, onSave){
+    var root = document.getElementById('modalRoot');
+    var backdrop = el('<div class="modal-backdrop"></div>');
+    var modal = el(
+      '<div class="modal">' +
+        '<h3>' + escapeHtml(title) + '</h3>' +
+        '<label for="modalInput">Name</label>' +
+        '<input type="text" id="modalInput" placeholder="' + escapeHtml(placeholder) + '" autocomplete="off">' +
+        '<div class="modal-actions">' +
+          '<button class="btn btn-ghost btn-sm" id="modalCancel">Cancel</button>' +
+          '<button class="btn btn-teal btn-sm" id="modalSave">Save</button>' +
+        '</div>' +
+      '</div>'
+    );
+    backdrop.appendChild(modal);
+    root.appendChild(backdrop);
+
+    var input = modal.querySelector('#modalInput');
+    input.value = initialValue || '';
+    setTimeout(function(){ input.focus(); input.select(); }, 30);
+
+    function close(){ root.removeChild(backdrop); }
+
+    modal.querySelector('#modalCancel').addEventListener('click', close);
+    backdrop.addEventListener('click', function(e){ if(e.target === backdrop) close(); });
+    document.addEventListener('keydown', function escHandler(e){
+      if(e.key === 'Escape'){ close(); document.removeEventListener('keydown', escHandler); }
+    });
+
+    function commit(){
+      var val = input.value.trim();
+      if(!val){ input.focus(); return; }
+      onSave(val);
+      close();
+    }
+    modal.querySelector('#modalSave').addEventListener('click', commit);
+    input.addEventListener('keydown', function(e){
+      if(e.key === 'Enter') commit();
+    });
+  }
+
+  // ---------- OFFICE CRUD ----------
+  function addOffice(){
+    openModal('Add office', 'e.g. Downtown Office', '', function(name){
+      data.offices.push({ id: uid(), name: name });
+      saveData(); render();
+    });
+  }
+  function editOffice(officeId){
+    var office = data.offices.find(function(o){return o.id===officeId;});
+    if(!office) return;
+    openModal('Rename office', 'Office name', office.name, function(name){
+      office.name = name; saveData(); render();
+    });
+  }
+  function deleteOffice(officeId){
+    var office = data.offices.find(function(o){return o.id===officeId;});
+    if(!office) return;
+    var agentCount = data.agents.filter(function(a){return a.officeId===officeId;}).length;
+    var msg = 'Delete "' + office.name + '"?';
+    if(agentCount>0) msg += ' This removes ' + agentCount + ' agent(s) and all their attendance records.';
+    if(!confirm(msg)) return;
+    data.offices = data.offices.filter(function(o){return o.id!==officeId;});
+    data.agents = data.agents.filter(function(a){return a.officeId!==officeId;});
+    data.attendance = data.attendance.filter(function(r){return r.officeId!==officeId;});
+    saveData();
+    if(state.officeId === officeId){ state.view='home'; state.officeId=null; }
+    render();
+  }
+
+  // ---------- AGENT CRUD ----------
+  function addAgent(officeId){
+    openModal('Add agent', 'e.g. Jordan Kim', '', function(name){
+      data.agents.push({ id: uid(), officeId: officeId, name: name });
+      saveData(); render();
+    });
+  }
+  function editAgent(agentId){
+    var agent = data.agents.find(function(a){return a.id===agentId;});
+    if(!agent) return;
+    openModal('Rename agent', 'Agent name', agent.name, function(name){
+      agent.name = name; saveData(); render();
+    });
+  }
+  function deleteAgent(agentId){
+    var agent = data.agents.find(function(a){return a.id===agentId;});
+    if(!agent) return;
+    if(!confirm('Delete "' + agent.name + '" and their attendance history?')) return;
+    data.agents = data.agents.filter(function(a){return a.id!==agentId;});
+    data.attendance = data.attendance.filter(function(r){return r.agentId!==agentId;});
+    saveData(); render();
+  }
+
+  // ---------- ATTENDANCE ----------
+  function todaysRecord(agentId){
+    var t = todayStr();
+    return data.attendance.find(function(r){ return r.agentId===agentId && r.date===t; });
+  }
+  function markAttendedToday(agentId, officeId){
+    if(todaysRecord(agentId)) return;
+    data.attendance.push({ id: uid(), agentId: agentId, officeId: officeId, date: todayStr(), ts: Date.now() });
+    saveData(); render();
+  }
+  function undoAttendedToday(agentId){
+    var rec = todaysRecord(agentId);
+    if(!rec) return;
+    data.attendance = data.attendance.filter(function(r){return r.id!==rec.id;});
+    saveData(); render();
+  }
+
+  // ---------- RENDER: HOME ----------
+  function renderHome(){
+    var main = document.getElementById('main');
+    var offices = data.offices;
+
+    var html = '<h2 class="section-title">Offices</h2>' +
+      '<p class="section-sub">Pick an office to view its roster, or set up a new one.</p>';
+
+    if(offices.length === 0){
+      html += '<div class="empty-state"><strong>No offices yet</strong>Add your first office to start taking roll call.</div>' +
+        '<div style="margin-top:16px;"><button class="btn btn-teal" id="btnAddOfficeEmpty">+ Add office</button></div>';
+      main.innerHTML = html;
+      document.getElementById('btnAddOfficeEmpty').addEventListener('click', addOffice);
+      return;
+    }
+
+    html += '<div class="office-grid">';
+    offices.forEach(function(o){
+      var agentCount = data.agents.filter(function(a){return a.officeId===o.id;}).length;
+      var t = todayStr();
+      var checkedInToday = data.attendance.filter(function(r){return r.officeId===o.id && r.date===t;}).length;
+      html += '<div class="office-card" data-office="' + o.id + '">' +
+        '<div class="oc-name">' + escapeHtml(o.name) + '</div>' +
+        '<div class="oc-meta">' + agentCount + ' agent' + (agentCount===1?'':'s') + ' · ' + checkedInToday + ' in today</div>' +
+        '<div class="oc-actions">' +
+          '<button class="btn btn-ghost btn-sm oc-edit" data-office="' + o.id + '">Edit</button>' +
+          '<button class="btn btn-rust btn-sm oc-delete" data-office="' + o.id + '">Delete</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '<button class="add-tile" id="btnAddOffice">+ Add office</button>';
+    html += '</div>';
+
+    main.innerHTML = html;
+
+    document.getElementById('btnAddOffice').addEventListener('click', addOffice);
+    main.querySelectorAll('.office-card').forEach(function(card){
+      card.addEventListener('click', function(e){
+        if(e.target.closest('.oc-edit') || e.target.closest('.oc-delete')) return;
+        state.view = 'office'; state.officeId = card.getAttribute('data-office'); render();
+      });
+    });
+    main.querySelectorAll('.oc-edit').forEach(function(btn){
+      btn.addEventListener('click', function(e){ e.stopPropagation(); editOffice(btn.getAttribute('data-office')); });
+    });
+    main.querySelectorAll('.oc-delete').forEach(function(btn){
+      btn.addEventListener('click', function(e){ e.stopPropagation(); deleteOffice(btn.getAttribute('data-office')); });
+    });
+  }
+
+  // ---------- RENDER: OFFICE (roster) ----------
+  function renderOffice(){
+    var main = document.getElementById('main');
+    var office = data.offices.find(function(o){return o.id===state.officeId;});
+    if(!office){ state.view='home'; render(); return; }
+
+    var agents = data.agents.filter(function(a){return a.officeId===office.id;});
+
+    var html = '<h2 class="section-title">' + escapeHtml(office.name) + '</h2>' +
+      '<p class="section-sub">Mark each agent as attended once they check in today.</p>';
+
+    if(agents.length === 0){
+      html += '<div class="empty-state"><strong>No agents yet</strong>Add agents to this office to start tracking attendance.</div>' +
+        '<div style="margin-top:16px;"><button class="btn btn-teal" id="btnAddAgentEmpty">+ Add agent</button></div>';
+      main.innerHTML = html;
+      document.getElementById('btnAddAgentEmpty').addEventListener('click', function(){ addAgent(office.id); });
+      return;
+    }
+
+    html += '<div class="roster">';
+    agents.forEach(function(a){
+      var rec = todaysRecord(a.id);
+      html += '<div class="roster-row">' +
+        '<span class="agent-name">' + escapeHtml(a.name) + '</span>' +
+        '<div class="row-actions">';
+      if(rec){
+        html += '<span class="stamp-mark"><span class="dot"></span>Attended today</span>' +
+                '<button class="undo-link" data-undo="' + a.id + '">undo</button>';
+      } else {
+        html += '<button class="stamp-btn" data-mark="' + a.id + '">Attended today</button>';
+      }
+      html += '<button class="btn btn-ghost btn-sm" data-edit-agent="' + a.id + '">Edit</button>' +
+              '<button class="btn btn-rust btn-sm" data-delete-agent="' + a.id + '">Delete</button>' +
+              '</div></div>';
+    });
+    html += '</div>';
+    html += '<div style="margin-top:16px;"><button class="btn btn-ghost" id="btnAddAgent">+ Add agent</button></div>';
+
+    main.innerHTML = html;
+
+    document.getElementById('btnAddAgent').addEventListener('click', function(){ addAgent(office.id); });
+    main.querySelectorAll('[data-mark]').forEach(function(btn){
+      btn.addEventListener('click', function(){ markAttendedToday(btn.getAttribute('data-mark'), office.id); });
+    });
+    main.querySelectorAll('[data-undo]').forEach(function(btn){
+      btn.addEventListener('click', function(){ undoAttendedToday(btn.getAttribute('data-undo')); });
+    });
+    main.querySelectorAll('[data-edit-agent]').forEach(function(btn){
+      btn.addEventListener('click', function(){ editAgent(btn.getAttribute('data-edit-agent')); });
+    });
+    main.querySelectorAll('[data-delete-agent]').forEach(function(btn){
+      btn.addEventListener('click', function(){ deleteAgent(btn.getAttribute('data-delete-agent')); });
+    });
+  }
+
+  // ---------- RENDER: DATA VIEW ----------
+  function renderData(){
+    var main = document.getElementById('main');
+
+    var officeOptions = '<option value="all">All offices</option>' +
+      data.offices.map(function(o){
+        return '<option value="' + o.id + '"' + (state.dataFilterOfficeId===o.id?' selected':'') + '>' + escapeHtml(o.name) + '</option>';
+      }).join('');
+
+    var monthOptions = MONTH_NAMES.map(function(m,i){
+      return '<option value="' + i + '"' + (state.dataMonth===i?' selected':'') + '>' + m + '</option>';
+    }).join('');
+
+    var thisYear = new Date().getFullYear();
+    var years = [];
+    for(var y = thisYear + 1; y >= thisYear - 4; y--) years.push(y);
+    var yearOptions = years.map(function(y){
+      return '<option value="' + y + '"' + (state.dataYear===y?' selected':'') + '>' + y + '</option>';
+    }).join('');
+
+    var html = '<h2 class="section-title">Attendance data</h2>' +
+      '<p class="section-sub">Filter by office and month to see who checked in.</p>' +
+      '<div class="filters">' +
+        '<div class="filter-field"><label>Office</label><select id="filterOffice">' + officeOptions + (state.dataFilterOfficeId==="all"?'':'') + '</select></div>' +
+        '<div class="filter-field"><label>Month</label><select id="filterMonth">' + monthOptions + '</select></div>' +
+        '<div class="filter-field"><label>Year</label><select id="filterYear">' + yearOptions + '</select></div>' +
+      '</div>';
+
+    // compute rows
+    var offices = state.dataFilterOfficeId === 'all'
+      ? data.offices
+      : data.offices.filter(function(o){return o.id===state.dataFilterOfficeId;});
+
+    var agentsInScope = data.agents.filter(function(a){
+      return offices.some(function(o){return o.id===a.officeId;});
+    });
+
+    var monthStr = String(state.dataMonth+1).padStart(2,'0');
+    var yearStr = String(state.dataYear);
+    var prefix = yearStr + '-' + monthStr;
+
+    var totalCheckins = 0;
+    var rows = agentsInScope.map(function(a){
+      var office = data.offices.find(function(o){return o.id===a.officeId;});
+      var recs = data.attendance.filter(function(r){
+        return r.agentId===a.id && r.date.indexOf(prefix)===0;
+      }).sort(function(x,y){ return x.date < y.date ? -1 : 1; });
+      totalCheckins += recs.length;
+      var dateLabels = recs.map(function(r){
+        return String(parseInt(r.date.slice(8,10),10));
+      }).join(', ');
+      return {
+        agentName: a.name,
+        officeName: office ? office.name : '—',
+        count: recs.length,
+        dates: dateLabels
+      };
+    });
+
+    // sort: most attendance first, then name
+    rows.sort(function(a,b){
+      if(b.count !== a.count) return b.count - a.count;
+      return a.agentName.localeCompare(b.agentName);
+    });
+
+    html += '<div class="summary-strip">' +
+      '<div class="summary-item"><span class="num">' + agentsInScope.length + '</span><span class="lbl">Agents in view</span></div>' +
+      '<div class="summary-item"><span class="num">' + totalCheckins + '</span><span class="lbl">Total check-ins, ' + MONTH_NAMES[state.dataMonth] + ' ' + state.dataYear + '</span></div>' +
+    '</div>';
+
+    if(agentsInScope.length === 0){
+      html += '<div class="empty-state"><strong>Nothing to show</strong>Add offices and agents first, then attendance data will appear here.</div>';
+    } else {
+      html += '<table class="ledger"><thead><tr>' +
+        '<th>Agent</th>' +
+        (state.dataFilterOfficeId==='all' ? '<th>Office</th>' : '') +
+        '<th>Days attended</th>' +
+        '<th>Dates</th>' +
+        '</tr></thead><tbody>';
+      rows.forEach(function(r){
+        html += '<tr>' +
+          '<td>' + escapeHtml(r.agentName) + '</td>' +
+          (state.dataFilterOfficeId==='all' ? '<td class="cell-office">' + escapeHtml(r.officeName) + '</td>' : '') +
+          '<td class="cell-count">' + r.count + '</td>' +
+          '<td class="cell-dates">' + (r.dates ? r.dates : '—') + '</td>' +
+          '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    main.innerHTML = html;
+
+    document.getElementById('filterOffice').addEventListener('change', function(e){
+      state.dataFilterOfficeId = e.target.value; render();
+    });
+    document.getElementById('filterMonth').addEventListener('change', function(e){
+      state.dataMonth = parseInt(e.target.value,10); render();
+    });
+    document.getElementById('filterYear').addEventListener('change', function(e){
+      state.dataYear = parseInt(e.target.value,10); render();
+    });
+  }
+
+  // ---------- MAIN RENDER ----------
+  function render(){
+    renderTodayChip();
+    renderCrumbsAndNav();
+    if(state.view === 'home') renderHome();
+    else if(state.view === 'office') renderOffice();
+    else if(state.view === 'data') renderData();
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
