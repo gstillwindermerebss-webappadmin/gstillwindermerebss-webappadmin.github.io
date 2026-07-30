@@ -1,0 +1,18 @@
+{
+  "password": "officepass123",
+  "githubConfig": {
+    "owner": "",
+    "repo": "",
+    "token": ""
+  },
+  "offices": [
+    { "id": "off_1", "name": "Headquarters" },
+    { "id": "off_2", "name": "Regional Branch" }
+  ],
+  "agents": [
+    { "id": "ag_1", "officeId": "off_1", "name": "Alice Johnson" },
+    { "id": "ag_2", "officeId": "off_1", "name": "Bob Smith" },
+    { "id": "ag_3", "officeId": "off_2", "name": "Charlie Davis" }
+  ],
+  "attendance": []
+}
