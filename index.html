@@ -77,6 +77,11 @@
     .folder-view { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }
     .folder-view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem; }
 
+    /* DATE PICKER BAR */
+    .date-picker-box { display: flex; align-items: center; gap: 0.5rem; background: var(--bg); padding: 0.4rem 0.75rem; border-radius: 10px; border: 1px solid var(--border); }
+    .date-picker-box input[type="date"] { background: transparent; border: none; color: var(--primary); font-weight: 700; font-size: 0.9rem; cursor: pointer; padding: 0; width: auto; }
+    .date-picker-box input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+
     /* INLINE AGENT ADD FIELD */
     .quick-add-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; background: var(--bg); padding: 0.75rem; border-radius: 12px; border: 1px solid var(--border); }
     .quick-add-bar input { flex: 1; background: transparent; border: none; outline: none; color: white; font-size: 0.95rem; padding: 0.25rem 0.5rem; }
@@ -153,9 +158,11 @@
           <button class="btn btn-secondary btn-sm" onclick="showHomeView()">← Back to Folders</button>
           <h2 id="active-folder-title" style="margin-top: 0.75rem; font-size: 1.6rem;">Office Name</h2>
         </div>
-        <div style="text-align: right;">
-          <span style="font-size: 0.8rem; color: var(--muted);">Today's Date</span>
-          <div id="today-date-str" style="font-weight: 700; color: var(--primary);"></div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
+          <span style="font-size: 0.8rem; color: var(--muted);">Attendance Date</span>
+          <div class="date-picker-box">
+            📅 <input type="date" id="selected-attendance-date" onchange="changeAttendanceDate(this.value)">
+          </div>
         </div>
       </div>
 
@@ -204,9 +211,7 @@
         <div>
           <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Year</label>
           <select id="filter-year" onchange="loadAttendanceLogs()">
-            <option value="">All Years</option>
-            <option value="2026">2026</option>
-            <option value="2025">2025</option>
+            <!-- Dynamically Populated -->
           </select>
         </div>
         <div>
@@ -242,10 +247,11 @@
             <th>Agent Name</th>
             <th>Office</th>
             <th>Date Attended</th>
+            <th style="text-align: right;">Action</th>
           </tr>
         </thead>
         <tbody id="attendance-logs-body">
-          <tr><td colspan="3" style="text-align:center;">Loading logs...</td></tr>
+          <tr><td colspan="4" style="text-align:center;">Loading logs...</td></tr>
         </tbody>
       </table>
     </div>
@@ -256,31 +262,46 @@
 
     let globalOffices = [];
     let globalAgents = [];
-    let todayLogs = new Set();
+    let activeLogs = new Set();
     let currentOfficeId = null;
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Selected Date defaults to today's date YYYY-MM-DD
+    let selectedDateStr = new Date().toISOString().split('T')[0];
 
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("today-date-str").innerText = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      document.getElementById("selected-attendance-date").value = selectedDateStr;
       initData();
     });
 
     async function initData() {
-      await loadTodayAttendance();
+      await loadAttendanceForSelectedDate();
       await loadOffices();
       await loadAgents();
     }
 
     // --- DATA FETCHING ---
-    async function loadTodayAttendance() {
+    async function loadAttendanceForSelectedDate() {
       try {
-        const res = await fetch(`${API_URL}/attendance?year=${todayStr.split('-')[0]}&month=${todayStr.split('-')[1]}`);
+        const [year, month] = selectedDateStr.split('-');
+        const res = await fetch(`${API_URL}/attendance?year=${year}&month=${month}`);
         const logs = await res.json();
         if (Array.isArray(logs)) {
-          todayLogs = new Set(logs.filter(l => l.date === todayStr).map(l => l.agent_id));
+          activeLogs = new Set(logs.filter(l => l.date === selectedDateStr).map(l => l.agent_id));
+        } else {
+          activeLogs.clear();
         }
-      } catch (e) { console.error("Error loading today logs", e); }
+      } catch (e) {
+        console.error("Error loading attendance for selected date", e);
+        activeLogs.clear();
+      }
+    }
+
+    async function changeAttendanceDate(newDate) {
+      if (!newDate) return;
+      selectedDateStr = newDate;
+      await loadAttendanceForSelectedDate();
+      renderFolders();
+      if (currentOfficeId) openFolder(currentOfficeId);
     }
 
     async function loadOffices() {
@@ -317,7 +338,7 @@
 
       container.innerHTML = globalOffices.map(o => {
         const officeAgents = globalAgents.filter(a => a.office_id === o.id);
-        const attendedCount = officeAgents.filter(a => todayLogs.has(a.id)).length;
+        const attendedCount = officeAgents.filter(a => activeLogs.has(a.id)).length;
 
         return `
           <div class="folder-card" onclick="openFolder(${o.id})">
@@ -329,7 +350,7 @@
             </div>
             <div class="folder-footer">
               <span style="font-size: 0.8rem; font-weight: 600; color: var(--success-text);">
-                ${attendedCount}/${officeAgents.length} Attended Today
+                ${attendedCount}/${officeAgents.length} Attended
               </span>
               <div class="folder-actions" onclick="event.stopPropagation()">
                 <button class="btn btn-secondary btn-sm" onclick="editOffice(${o.id}, '${escape(o.office_name)}')">✏️</button>
@@ -360,7 +381,7 @@
       }
 
       container.innerHTML = officeAgents.map(a => {
-        const isAttended = todayLogs.has(a.id);
+        const isAttended = activeLogs.has(a.id);
         return `
           <div class="agent-row">
             <div>
@@ -369,7 +390,7 @@
             <div style="display: flex; align-items: center; gap: 0.75rem;">
               <label class="attendance-toggle">
                 <input type="checkbox" ${isAttended ? 'checked' : ''} onchange="toggleAttendance(${a.id}, '${escape(a.agent_name)}', ${office.id}, '${escape(office.office_name)}', this.checked)">
-                <span class="toggle-pill">${isAttended ? '✓ Attended Today' : '+ Mark Present'}</span>
+                <span class="toggle-pill">${isAttended ? '✓ Attended' : '+ Mark Present'}</span>
               </label>
               <button class="btn btn-secondary btn-sm" onclick="editAgentInline(${a.id}, '${escape(a.agent_name)}')">✏️</button>
               <button class="btn btn-danger btn-sm" onclick="deleteAgent(${a.id})">🗑️</button>
@@ -418,8 +439,8 @@
 
     // --- ATTENDANCE TOGGLE LOGIC ---
     async function toggleAttendance(agentId, agentName, officeId, officeName, isChecked) {
-      if (isChecked) todayLogs.add(agentId);
-      else todayLogs.delete(agentId);
+      if (isChecked) activeLogs.add(agentId);
+      else activeLogs.delete(agentId);
 
       openFolder(officeId);
 
@@ -431,7 +452,7 @@
           agent_name: agentName,
           office_id: officeId,
           office_name: officeName,
-          date: todayStr,
+          date: selectedDateStr,
           attended: isChecked
         })
       });
@@ -459,7 +480,7 @@
         const tbody = document.getElementById("attendance-logs-body");
         
         if (!Array.isArray(logs) || logs.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color: var(--muted); padding: 2rem;">No logs found for the selected filters.<br><small style="opacity:0.7">Try setting Year or Month to "All"</small></td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--muted); padding: 2rem;">No logs found for the selected filters.</td></tr>`;
           return;
         }
 
@@ -468,10 +489,37 @@
             <td><strong>${escape(l.agent_name)}</strong></td>
             <td>${escape(l.office_name)}</td>
             <td style="color: var(--primary); font-weight: 600;">${l.date}</td>
+            <td style="text-align: right;">
+              <button class="btn btn-danger btn-sm" title="Delete Log" onclick="removeAttendanceLog(${l.agent_id}, '${l.date}', ${l.office_id})">🗑️ Delete</button>
+            </td>
           </tr>
         `).join("");
       } catch (err) {
         console.error("Failed to fetch attendance logs:", err);
+      }
+    }
+
+    async function removeAttendanceLog(agentId, date, officeId) {
+      if (confirm(`Remove attendance record for this date (${date})?`)) {
+        await fetch(`${API_URL}/attendance`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agent_id: agentId,
+            date: date,
+            office_id: officeId,
+            attended: false
+          })
+        });
+
+        // If removing for currently selected date view, sync UI state
+        if (date === selectedDateStr) {
+          activeLogs.delete(agentId);
+          renderFolders();
+          if (currentOfficeId) openFolder(currentOfficeId);
+        }
+
+        loadAttendanceLogs();
       }
     }
 
@@ -519,11 +567,16 @@
     // --- MODAL UTILS ---
     function openModal(id) {
       if (id === 'attendance-modal') {
-        // Automatically default filter to current year on open
-        const currentYear = new Date().getFullYear().toString();
+        const currentYear = new Date().getFullYear();
         const yearSelect = document.getElementById("filter-year");
-        if (!yearSelect.value) yearSelect.value = currentYear;
-        
+
+        // Dynamically build year options down to 2025
+        let yearOptions = `<option value="">All Years</option>`;
+        for (let y = currentYear; y >= 2025; y--) {
+          yearOptions += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`;
+        }
+        yearSelect.innerHTML = yearOptions;
+
         loadAttendanceLogs();
       }
       document.getElementById(id).style.display = "flex";
