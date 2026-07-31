@@ -3,260 +3,212 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Office Attendance Tracker</title>
+  <title>Office & Agent Management System</title>
   <style>
     :root {
       --bg: #f8fafc;
-      --card-bg: #ffffff;
+      --card: #ffffff;
       --text: #0f172a;
-      --text-muted: #64748b;
+      --muted: #64748b;
       --primary: #2563eb;
-      --primary-hover: #1d4ed8;
+      --danger: #dc2626;
       --border: #e2e8f0;
-      --success: #16a34a;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 2rem 1rem; }
+    .container { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; }
+    
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      display: flex;
-      justify-content: center;
-      padding: 2rem 1rem;
-      min-height: 100vh;
-    }
+    .card { background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    h2 { font-size: 1.25rem; margin-bottom: 1rem; }
 
-    .container {
-      width: 100%;
-      max-width: 600px;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
+    form { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+    input, select, button { padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.95rem; }
+    
+    button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; }
+    button.btn-danger { background: var(--danger); }
+    button.btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; margin-left: 0.25rem; }
 
-    .card {
-      background: var(--card-bg);
-      padding: 1.5rem;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+    th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; }
 
-    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-    p.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem; }
-
-    form { display: flex; flex-direction: column; gap: 1rem; }
-
-    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
-
-    label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
-
-    input, select, button {
-      font-size: 1rem;
-      padding: 0.75rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      outline: none;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-    }
-
-    button {
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    button:hover { background-color: var(--primary-hover); }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 0.5rem;
-    }
-
-    th, td {
-      text-align: left;
-      padding: 0.75rem;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.9rem;
-    }
-
-    th { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
-
-    .badge {
-      display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-
-    .badge-present { background: #dcfce7; color: #15803d; }
-    .badge-remote { background: #dbeafe; color: #1e40af; }
-    .badge-absent { background: #fee2e2; color: #b91c1c; }
-
-    .status-msg {
-      margin-top: 0.5rem;
-      font-size: 0.85rem;
-      color: var(--success);
-      display: none;
-    }
+    .actions { text-align: right; white-space: nowrap; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    
-    <!-- Attendance Form Card -->
-    <div class="card">
-      <h1>Mark Attendance</h1>
-      <p class="subtitle">Log your status for today</p>
-      
-      <form id="attendance-form">
-        <div class="form-group">
-          <label for="userName">Your Name</label>
-          <input type="text" id="userName" placeholder="e.g. Jane Doe" required>
-        </div>
+    <h1>Directory Management</h1>
 
-        <div class="form-group">
-          <label for="status">Status</label>
-          <select id="status" required>
-            <option value="In Office">In Office</option>
-            <option value="Working Remotely">Working Remotely</option>
-            <option value="Out of Office">Out of Office</option>
+    <div class="grid">
+      <!-- OFFICES MANAGEMENT -->
+      <div class="card">
+        <h2>Offices (Alphabetical)</h2>
+        <form id="office-form">
+          <input type="text" id="office-name" placeholder="New Office Name" required>
+          <button type="submit">Add Office</button>
+        </form>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Office Name</th>
+              <th class="actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="offices-list"></tbody>
+        </table>
+      </div>
+
+      <!-- AGENTS MANAGEMENT -->
+      <div class="card">
+        <h2>Agents (Alphabetical)</h2>
+        <form id="agent-form">
+          <input type="text" id="agent-name" placeholder="New Agent Name" required>
+          <select id="agent-office-select" required>
+            <option value="">Select Office...</option>
           </select>
-        </div>
+          <button type="submit">Add Agent</button>
+        </form>
 
-        <button type="submit" id="submitBtn">Submit Record</button>
-        <p class="status-msg" id="statusMsg">✔ Attendance logged successfully!</p>
-      </form>
+        <table>
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Office</th>
+              <th class="actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="agents-list"></tbody>
+        </table>
+      </div>
     </div>
-
-    <!-- Log History Card -->
-    <div class="card">
-      <h1>Recent Activity</h1>
-      <p class="subtitle">Live log stored securely on Cloudflare D1</p>
-      
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Status</th>
-            <th>Timestamp</th>
-          </tr>
-        </thead>
-        <tbody id="attendance-table-body">
-          <tr>
-            <td colspan="3" style="text-align:center; color: var(--text-muted);">Loading records...</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
   </div>
 
   <script>
-    // ⚠️ REPLACE THIS WITH YOUR CLOUDFLARE WORKER URL FROM STEP 2 ⚠️
-    const API_URL = "https://attendance-api.gstillwindermerebss.workers.dev/";
+    // ⚠️ PASTE YOUR WORKER URL HERE ⚠️
+    const API_URL = "https://attendance-api.your-subdomain.workers.dev/api";
 
-    const form = document.getElementById("attendance-form");
-    const nameInput = document.getElementById("userName");
-    const statusInput = document.getElementById("status");
-    const submitBtn = document.getElementById("submitBtn");
-    const statusMsg = document.getElementById("statusMsg");
-    const tableBody = document.getElementById("attendance-table-body");
+    let globalOffices = [];
 
-    // Fetch and render records on initial page load
-    document.addEventListener("DOMContentLoaded", fetchAttendance);
+    document.addEventListener("DOMContentLoaded", () => {
+      loadOffices();
+      loadAgents();
+    });
 
-    // GET Request: Fetch records from Cloudflare D1
-    async function fetchAttendance() {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error("Failed to fetch data");
+    // --- OFFICE LOGIC ---
+    async function loadOffices() {
+      const res = await fetch(`${API_URL}/offices`);
+      globalOffices = await res.json();
+      
+      // Update Dropdown in Agent Form
+      const select = document.getElementById("agent-office-select");
+      select.innerHTML = `<option value="">Select Office...</option>` + 
+        globalOffices.map(o => `<option value="${o.id}">${escape(o.office_name)}</option>`).join("");
 
-        const records = await response.json();
+      // Render Table
+      const list = document.getElementById("offices-list");
+      list.innerHTML = globalOffices.map(o => `
+        <tr>
+          <td>${escape(o.office_name)}</td>
+          <td class="actions">
+            <button class="btn-sm" onclick="editOffice(${o.id}, '${escape(o.office_name)}')">Edit</button>
+            <button class="btn-sm btn-danger" onclick="deleteOffice(${o.id})">Delete</button>
+          </td>
+        </tr>
+      `).join("");
+    }
 
-        if (records.length === 0) {
-          tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">No attendance records found yet.</td></tr>`;
-          return;
-        }
+    document.getElementById("office-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const office_name = document.getElementById("office-name").value.trim();
+      await fetch(`${API_URL}/offices`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ office_name })
+      });
+      document.getElementById("office-name").value = "";
+      loadOffices();
+    });
 
-        tableBody.innerHTML = records.map(record => {
-          let badgeClass = "badge-present";
-          if (record.status === "Working Remotely") badgeClass = "badge-remote";
-          if (record.status === "Out of Office") badgeClass = "badge-absent";
-
-          const formattedTime = new Date(record.timestamp).toLocaleString();
-
-          return `
-            <tr>
-              <td><strong>${escapeHtml(record.user_name)}</strong></td>
-              <td><span class="badge ${badgeClass}">${escapeHtml(record.status)}</span></td>
-              <td style="color: var(--text-muted);">${formattedTime}</td>
-            </tr>
-          `;
-        }).join("");
-
-      } catch (err) {
-        console.error("Error:", err);
-        tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color: #b91c1c;">Failed to load data. Please check your Worker URL.</td></tr>`;
+    async function editOffice(id, currentName) {
+      const office_name = prompt("Update Office Name:", currentName);
+      if (office_name && office_name !== currentName) {
+        await fetch(`${API_URL}/offices/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ office_name })
+        });
+        loadOffices();
+        loadAgents(); // Reload agents to reflect updated office name
       }
     }
 
-    // POST Request: Save new attendance record to Cloudflare D1
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const user_name = nameInput.value.trim();
-      const status = statusInput.value;
-
-      if (!user_name) return;
-
-      submitBtn.disabled = true;
-      submitBtn.innerText = "Submitting...";
-
-      try {
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_name, status })
-        });
-
-        if (!response.ok) throw new Error("Submission failed");
-
-        // Clear input and show success message
-        nameInput.value = "";
-        statusMsg.style.display = "block";
-        setTimeout(() => statusMsg.style.display = "none", 3000);
-
-        // Refresh log table dynamically
-        await fetchAttendance();
-
-      } catch (err) {
-        console.error("Error:", err);
-        alert("Failed to submit attendance. Please try again.");
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerText = "Submit Record";
+    async function deleteOffice(id) {
+      if (confirm("Deleting this office will also delete associated agents. Continue?")) {
+        await fetch(`${API_URL}/offices/${id}`, { method: "DELETE" });
+        loadOffices();
+        loadAgents();
       }
+    }
+
+    // --- AGENT LOGIC ---
+    async function loadAgents() {
+      const res = await fetch(`${API_URL}/agents`);
+      const agents = await res.json();
+
+      const list = document.getElementById("agents-list");
+      list.innerHTML = agents.map(a => `
+        <tr>
+          <td><strong>${escape(a.agent_name)}</strong></td>
+          <td>${escape(a.office_name)}</td>
+          <td class="actions">
+            <button class="btn-sm" onclick="editAgent(${a.id}, '${escape(a.agent_name)}', ${a.office_id})">Edit</button>
+            <button class="btn-sm btn-danger" onclick="deleteAgent(${a.id})">Delete</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    document.getElementById("agent-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const agent_name = document.getElementById("agent-name").value.trim();
+      const office_id = document.getElementById("agent-office-select").value;
+
+      await fetch(`${API_URL}/agents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent_name, office_id })
+      });
+      document.getElementById("agent-name").value = "";
+      loadAgents();
     });
 
-    // Simple XSS prevention utility
-    function escapeHtml(str) {
-      return str.replace(/[&<>"']/g, match => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-      }[match]));
+    async function editAgent(id, currentName, currentOfficeId) {
+      const agent_name = prompt("Update Agent Name:", currentName);
+      if (!agent_name) return;
+
+      await fetch(`${API_URL}/agents/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent_name, office_id: currentOfficeId })
+      });
+      loadAgents();
+    }
+
+    async function deleteAgent(id) {
+      if (confirm("Delete this agent?")) {
+        await fetch(`${API_URL}/agents/${id}`, { method: "DELETE" });
+        loadAgents();
+      }
+    }
+
+    function escape(str) {
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
     }
   </script>
 </body>
