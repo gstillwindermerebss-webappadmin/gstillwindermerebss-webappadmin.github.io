@@ -3,100 +3,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Office & Agent Directory</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📁</text></svg>">
+  <title>Directory & Attendance Portal</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📂</text></svg>">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
     :root {
-      --bg: #f1f5f9;
-      --card-bg: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --folder-bg: #fef3c7;
-      --folder-border: #f59e0b;
-      --folder-tab: #fde68a;
-      --success-bg: #dcfce7;
-      --success-text: #15803d;
-      --border: #e2e8f0;
-      --danger: #ef4444;
-      --radius: 14px;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-card: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --folder-bg: #1e293b;
+      --folder-border: #38bdf8;
+      --folder-tab: #0284c7;
+      --success-bg: rgba(34, 197, 94, 0.15);
+      --success-border: #22c55e;
+      --success-text: #4ade80;
+      --danger: #f43f5e;
+      --border: #334155;
+      --radius: 16px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 2rem 1rem; min-height: 100vh; }
-    .container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 2rem 1.5rem; min-height: 100vh; }
+    .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; }
 
     /* HEADER BAR */
-    header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
-    h1 { font-size: 1.75rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; }
+    header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; display: flex; align-items: center; gap: 0.6rem; color: #ffffff; }
     .header-btns { display: flex; gap: 0.75rem; }
 
     /* BUTTONS */
-    .btn { background: var(--primary); color: white; padding: 0.6rem 1.2rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; font-size: 0.9rem; }
-    .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
-    .btn-secondary { background: white; color: var(--text); border: 1px solid var(--border); }
-    .btn-secondary:hover { background: #f8fafc; }
-    .btn-danger { background: var(--danger); color: white; }
-    .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+    .btn { background: var(--primary); color: #0f172a; padding: 0.65rem 1.25rem; border-radius: 10px; border: none; font-weight: 700; font-size: 0.875rem; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; }
+    .btn:hover { background: #7dd3fc; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3); }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--surface-card); border-color: var(--muted); transform: translateY(-1px); box-shadow: none; }
+    .btn-danger { background: rgba(244, 63, 94, 0.15); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.3); }
+    .btn-danger:hover { background: var(--danger); color: white; }
+    .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; border-radius: 6px; }
 
     /* FOLDERS GRID */
-    .folders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
+    .folders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.75rem; }
 
     .folder-card {
       background: var(--folder-bg);
-      border: 2px solid var(--folder-border);
+      border: 1px solid var(--border);
+      border-top: 4px solid var(--folder-border);
       border-radius: var(--radius);
       padding: 1.5rem;
       position: relative;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.15);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-height: 160px;
+      min-height: 170px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
     }
 
-    .folder-card::before {
-      content: '';
-      position: absolute;
-      top: -12px;
-      left: 16px;
-      width: 70px;
-      height: 12px;
-      background: var(--folder-tab);
-      border: 2px solid var(--folder-border);
-      border-bottom: none;
-      border-top-left-radius: 6px;
-      border-top-right-radius: 6px;
-    }
-
-    .folder-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.25); }
+    .folder-card:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); }
 
     .folder-header { display: flex; justify-content: space-between; align-items: flex-start; }
-    .folder-title { font-size: 1.2rem; font-weight: 700; color: #78350f; word-break: break-word; }
-    .folder-badge { background: #fef3c7; border: 1px solid var(--folder-border); color: #92400e; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .folder-title { font-size: 1.25rem; font-weight: 700; color: #ffffff; word-break: break-word; }
+    .folder-badge { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); color: var(--primary); padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
 
-    .folder-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; border-top: 1px dashed rgba(245, 158, 11, 0.4); padding-top: 0.75rem; }
-    .folder-actions { display: flex; gap: 0.25rem; }
+    .folder-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; border-top: 1px dashed var(--border); padding-top: 0.85rem; }
+    .folder-actions { display: flex; gap: 0.35rem; }
 
     /* VIEW INSIDE FOLDER (AGENT LIST) */
-    .folder-view { background: white; border-radius: var(--radius); border: 1px solid var(--border); padding: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .folder-view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+    .folder-view { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }
+    .folder-view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem; }
 
-    .agent-row { display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0.5rem; background: white; transition: background 0.15s; }
-    .agent-row:hover { background: #f8fafc; }
+    /* INLINE AGENT ADD FIELD */
+    .quick-add-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; background: var(--bg); padding: 0.75rem; border-radius: 12px; border: 1px solid var(--border); }
+    .quick-add-bar input { flex: 1; background: transparent; border: none; outline: none; color: white; font-size: 0.95rem; padding: 0.25rem 0.5rem; }
 
-    /* ATTENDED TOGGLE SWITCH */
-    .attendance-toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; user-select: none; }
+    .agent-row { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 0.65rem; background: var(--bg); transition: all 0.2s; }
+    .agent-row:hover { border-color: var(--muted); }
+
+    /* ATTENDED TOGGLE PILL */
+    .attendance-toggle { display: flex; align-items: center; cursor: pointer; user-select: none; }
     .attendance-toggle input { display: none; }
     .toggle-pill {
-      padding: 0.4rem 0.8rem;
+      padding: 0.45rem 0.9rem;
       border-radius: 20px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 700;
-      background: #f1f5f9;
+      background: var(--surface-card);
       color: var(--muted);
       border: 1px solid var(--border);
       transition: all 0.2s ease;
@@ -104,25 +100,27 @@
     .attendance-toggle input:checked + .toggle-pill {
       background: var(--success-bg);
       color: var(--success-text);
-      border-color: #86efac;
-      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+      border-color: var(--success-border);
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
     }
 
-    /* MODAL WINDOWS */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 1rem; }
-    .modal { background: white; width: 100%; max-width: 650px; border-radius: var(--radius); padding: 2rem; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+    /* MODALS */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 1rem; }
+    .modal { background: var(--surface); width: 100%; max-width: 650px; border-radius: var(--radius); padding: 2rem; border: 1px solid var(--border); max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); }
+    .modal-close:hover { color: white; }
 
     /* FORM STYLES */
-    .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
     .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
-    input, select { padding: 0.65rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.95rem; width: 100%; }
+    input, select { padding: 0.75rem; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: white; font-size: 0.95rem; width: 100%; outline: none; }
+    input:focus, select:focus { border-color: var(--primary); }
 
     /* TABLES */
     table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-    th { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    th, td { text-align: left; padding: 0.85rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    th { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
 
     .hidden { display: none !important; }
   </style>
@@ -133,19 +131,18 @@
     
     <!-- HEADER BAR -->
     <header>
-      <h1>📁 Office Directory</h1>
+      <h1>📁 Offices & Directory</h1>
       <div class="header-btns">
         <button class="btn btn-secondary" onclick="openModal('attendance-modal')">📊 See Attendance Data</button>
         <button class="btn" onclick="openModal('office-modal')">➕ New Office</button>
-        <button class="btn" onclick="openModal('agent-modal')">👤 New Agent</button>
       </div>
     </header>
 
     <!-- MAIN HOME VIEW: OFFICE FOLDERS GRID -->
     <main id="home-view">
-      <h2 style="margin-bottom: 1rem; color: var(--muted); font-size: 1rem;">Select an office folder to manage agents & mark attendance:</h2>
+      <h2 style="margin-bottom: 1.25rem; color: var(--muted); font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Select an Office Folder:</h2>
       <div class="folders-grid" id="folders-container">
-        <!-- Rendered dynamically -->
+        <!-- Dynamic Folders Rendered Here -->
       </div>
     </main>
 
@@ -153,18 +150,24 @@
     <main id="folder-view" class="folder-view hidden">
       <div class="folder-view-header">
         <div>
-          <button class="btn btn-secondary btn-sm" onclick="showHomeView()">← Back to All Folders</button>
-          <h2 id="active-folder-title" style="margin-top: 0.5rem; font-size: 1.5rem;">Office Name</h2>
+          <button class="btn btn-secondary btn-sm" onclick="showHomeView()">← Back to Folders</button>
+          <h2 id="active-folder-title" style="margin-top: 0.75rem; font-size: 1.6rem;">Office Name</h2>
         </div>
         <div style="text-align: right;">
-          <span style="font-size: 0.85rem; color: var(--muted);">Today's Date:</span>
-          <div id="today-date-str" style="font-weight: 700;"></div>
+          <span style="font-size: 0.8rem; color: var(--muted);">Today's Date</span>
+          <div id="today-date-str" style="font-weight: 700; color: var(--primary);"></div>
         </div>
       </div>
 
-      <h3 style="font-size: 1rem; color: var(--muted); margin-bottom: 1rem;">Agents List</h3>
+      <!-- INLINE AGENT ADD FORM -->
+      <form id="inline-agent-form" class="quick-add-bar" onsubmit="handleInlineAddAgent(event)">
+        <input type="text" id="inline-agent-name" placeholder="Type new agent full name here..." required>
+        <button type="submit" class="btn btn-sm">➕ Add Agent to this Office</button>
+      </form>
+
+      <h3 style="font-size: 0.9rem; color: var(--muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">Assigned Agents</h3>
       <div id="agents-list-container">
-        <!-- Rendered dynamically -->
+        <!-- Dynamic Agents Rendered Here -->
       </div>
     </main>
 
@@ -181,33 +184,9 @@
         <input type="hidden" id="office-id">
         <div class="form-group">
           <label for="office-name">Office Name</label>
-          <input type="text" id="office-name" placeholder="e.g. Seattle Downtown" required>
+          <input type="text" id="office-name" placeholder="e.g. Bellevue HQ" required>
         </div>
-        <button type="submit" class="btn">Save Office</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: ADD / EDIT AGENT -->
-  <div class="modal-overlay" id="agent-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="agent-modal-title">Create Agent</h2>
-        <button class="modal-close" onclick="closeModal('agent-modal')">&times;</button>
-      </div>
-      <form id="agent-form">
-        <input type="hidden" id="agent-id">
-        <div class="form-group">
-          <label for="agent-name">Agent Full Name</label>
-          <input type="text" id="agent-name" placeholder="e.g. Sarah Jenkins" required>
-        </div>
-        <div class="form-group">
-          <label for="agent-office-select">Assigned Office</label>
-          <select id="agent-office-select" required>
-            <option value="">Select Office...</option>
-          </select>
-        </div>
-        <button type="submit" class="btn">Save Agent</button>
+        <button type="submit" class="btn" style="width: 100%; justify-content: center;">Save Office</button>
       </form>
     </div>
   </div>
@@ -216,12 +195,12 @@
   <div class="modal-overlay" id="attendance-modal">
     <div class="modal" style="max-width: 800px;">
       <div class="modal-header">
-        <h2>📊 Historical Attendance Log</h2>
+        <h2>📊 Attendance History</h2>
         <button class="modal-close" onclick="closeModal('attendance-modal')">&times;</button>
       </div>
 
       <!-- Filters -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
         <div>
           <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Year</label>
           <select id="filter-year" onchange="loadAttendanceLogs()">
@@ -260,13 +239,13 @@
       <table>
         <thead>
           <tr>
-            <th>Agent</th>
+            <th>Agent Name</th>
             <th>Office</th>
             <th>Date Attended</th>
           </tr>
         </thead>
         <tbody id="attendance-logs-body">
-          <tr><td colspan="3" style="text-align:center;">Select filters to view logs...</td></tr>
+          <tr><td colspan="3" style="text-align:center;">Loading logs...</td></tr>
         </tbody>
       </table>
     </div>
@@ -277,13 +256,13 @@
 
     let globalOffices = [];
     let globalAgents = [];
-    let todayLogs = new Set(); // Stores agent IDs present today
+    let todayLogs = new Set();
     let currentOfficeId = null;
 
-    const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const todayStr = new Date().toISOString().split('T')[0];
 
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("today-date-str").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+      document.getElementById("today-date-str").innerText = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
       initData();
     });
 
@@ -301,7 +280,7 @@
         if (Array.isArray(logs)) {
           todayLogs = new Set(logs.filter(l => l.date === todayStr).map(l => l.agent_id));
         }
-      } catch (e) { console.error("Error loading today's logs", e); }
+      } catch (e) { console.error("Error loading today logs", e); }
     }
 
     async function loadOffices() {
@@ -323,7 +302,7 @@
         if (!Array.isArray(data)) return;
 
         globalAgents = data;
-        renderFolders(); // Update counts
+        renderFolders();
         if (currentOfficeId) openFolder(currentOfficeId);
       } catch (e) { console.error(e); }
     }
@@ -332,7 +311,7 @@
     function renderFolders() {
       const container = document.getElementById("folders-container");
       if (globalOffices.length === 0) {
-        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--muted); padding: 3rem;">No offices found. Click <strong>➕ New Office</strong> to get started.</div>`;
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--muted); padding: 3rem;">No offices created yet. Click <strong>➕ New Office</strong> to start.</div>`;
         return;
       }
 
@@ -349,7 +328,7 @@
               </div>
             </div>
             <div class="folder-footer">
-              <span style="font-size: 0.8rem; font-weight: 600; color: #92400e;">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--success-text);">
                 ${attendedCount}/${officeAgents.length} Attended Today
               </span>
               <div class="folder-actions" onclick="event.stopPropagation()">
@@ -376,7 +355,7 @@
       const container = document.getElementById("agents-list-container");
 
       if (officeAgents.length === 0) {
-        container.innerHTML = `<p style="color: var(--muted); text-align: center; padding: 2rem;">No agents in this office yet.</p>`;
+        container.innerHTML = `<p style="color: var(--muted); text-align: center; padding: 2rem;">No agents in this folder. Use the field above to add one!</p>`;
         return;
       }
 
@@ -385,14 +364,14 @@
         return `
           <div class="agent-row">
             <div>
-              <strong>${escape(a.agent_name)}</strong>
+              <strong style="color: white; font-size: 0.95rem;">${escape(a.agent_name)}</strong>
             </div>
-            <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
               <label class="attendance-toggle">
                 <input type="checkbox" ${isAttended ? 'checked' : ''} onchange="toggleAttendance(${a.id}, '${escape(a.agent_name)}', ${office.id}, '${escape(office.office_name)}', this.checked)">
                 <span class="toggle-pill">${isAttended ? '✓ Attended Today' : '+ Mark Present'}</span>
               </label>
-              <button class="btn btn-secondary btn-sm" onclick="editAgent(${a.id}, '${escape(a.agent_name)}', ${office.id})">✏️</button>
+              <button class="btn btn-secondary btn-sm" onclick="editAgentInline(${a.id}, '${escape(a.agent_name)}')">✏️</button>
               <button class="btn btn-danger btn-sm" onclick="deleteAgent(${a.id})">🗑️</button>
             </div>
           </div>
@@ -407,12 +386,41 @@
       renderFolders();
     }
 
+    // --- INLINE ADD AGENT TO OPEN FOLDER ---
+    async function handleInlineAddAgent(e) {
+      e.preventDefault();
+      const input = document.getElementById("inline-agent-name");
+      const agent_name = input.value.trim();
+
+      if (!agent_name || !currentOfficeId) return;
+
+      await fetch(`${API_URL}/agents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent_name, office_id: currentOfficeId })
+      });
+
+      input.value = "";
+      await loadAgents();
+    }
+
+    async function editAgentInline(id, currentName) {
+      const agent_name = prompt("Update Agent Name:", currentName);
+      if (agent_name && agent_name !== currentName) {
+        await fetch(`${API_URL}/agents/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agent_name, office_id: currentOfficeId })
+        });
+        await loadAgents();
+      }
+    }
+
     // --- ATTENDANCE TOGGLE LOGIC ---
     async function toggleAttendance(agentId, agentName, officeId, officeName, isChecked) {
       if (isChecked) todayLogs.add(agentId);
       else todayLogs.delete(agentId);
 
-      // Re-render toggle label state locally immediately
       openFolder(officeId);
 
       await fetch(`${API_URL}/attendance`, {
@@ -445,7 +453,7 @@
 
       const tbody = document.getElementById("attendance-logs-body");
       if (!Array.isArray(logs) || logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color: var(--muted);">No logs matching selected filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color: var(--muted);">No logs found matching selected filters.</td></tr>`;
         return;
       }
 
@@ -453,12 +461,12 @@
         <tr>
           <td><strong>${escape(l.agent_name)}</strong></td>
           <td>${escape(l.office_name)}</td>
-          <td>${l.date}</td>
+          <td style="color: var(--primary); font-weight: 600;">${l.date}</td>
         </tr>
       `).join("");
     }
 
-    // --- CRUD ACTIONS ---
+    // --- OFFICE ACTIONS ---
     document.getElementById("office-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const id = document.getElementById("office-id").value;
@@ -477,25 +485,6 @@
       initData();
     });
 
-    document.getElementById("agent-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const id = document.getElementById("agent-id").value;
-      const agent_name = document.getElementById("agent-name").value.trim();
-      const office_id = document.getElementById("agent-office-select").value;
-
-      const method = id ? "PUT" : "POST";
-      const url = id ? `${API_URL}/agents/${id}` : `${API_URL}/agents`;
-
-      await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agent_name, office_id })
-      });
-
-      closeModal("agent-modal");
-      initData();
-    });
-
     function editOffice(id, name) {
       document.getElementById("office-id").value = id;
       document.getElementById("office-name").value = name;
@@ -511,14 +500,6 @@
       }
     }
 
-    function editAgent(id, name, officeId) {
-      document.getElementById("agent-id").value = id;
-      document.getElementById("agent-name").value = name;
-      document.getElementById("agent-office-select").value = officeId;
-      document.getElementById("agent-modal-title").innerText = "Edit Agent";
-      openModal("agent-modal");
-    }
-
     async function deleteAgent(id) {
       if (confirm("Delete this agent?")) {
         await fetch(`${API_URL}/agents/${id}`, { method: "DELETE" });
@@ -526,7 +507,7 @@
       }
     }
 
-    // --- MODAL & DROPDOWN UTILS ---
+    // --- MODAL UTILS ---
     function openModal(id) {
       if (id === 'attendance-modal') loadAttendanceLogs();
       document.getElementById(id).style.display = "flex";
@@ -534,24 +515,16 @@
 
     function closeModal(id) {
       document.getElementById(id).style.display = "none";
-      // Clear forms
       if (id === 'office-modal') {
         document.getElementById("office-id").value = "";
         document.getElementById("office-name").value = "";
       }
-      if (id === 'agent-modal') {
-        document.getElementById("agent-id").value = "";
-        document.getElementById("agent-name").value = "";
-      }
     }
 
     function populateOfficeDropdowns() {
-      const selects = [document.getElementById("agent-office-select"), document.getElementById("filter-office")];
-      selects.forEach((select, idx) => {
-        const defaultText = idx === 0 ? "Select Office..." : "All Offices";
-        select.innerHTML = `<option value="">${defaultText}</option>` + 
-          globalOffices.map(o => `<option value="${o.id}">${escape(o.office_name)}</option>`).join("");
-      });
+      const select = document.getElementById("filter-office");
+      select.innerHTML = `<option value="">All Offices</option>` + 
+        globalOffices.map(o => `<option value="${o.id}">${escape(o.office_name)}</option>`).join("");
     }
 
     function escape(str) {
