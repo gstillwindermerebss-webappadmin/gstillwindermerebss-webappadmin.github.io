@@ -3,212 +3,559 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Office & Agent Management System</title>
+  <title>Office & Agent Directory</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📁</text></svg>">
   <style>
     :root {
-      --bg: #f8fafc;
-      --card: #ffffff;
+      --bg: #f1f5f9;
+      --card-bg: #ffffff;
       --text: #0f172a;
       --muted: #64748b;
       --primary: #2563eb;
-      --danger: #dc2626;
+      --primary-hover: #1d4ed8;
+      --folder-bg: #fef3c7;
+      --folder-border: #f59e0b;
+      --folder-tab: #fde68a;
+      --success-bg: #dcfce7;
+      --success-text: #15803d;
       --border: #e2e8f0;
+      --danger: #ef4444;
+      --radius: 14px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 2rem 1rem; }
-    .container { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; }
-    
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 2rem 1rem; min-height: 100vh; }
+    .container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; }
 
-    .card { background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-    h2 { font-size: 1.25rem; margin-bottom: 1rem; }
+    /* HEADER BAR */
+    header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    h1 { font-size: 1.75rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; }
+    .header-btns { display: flex; gap: 0.75rem; }
 
-    form { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
-    input, select, button { padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.95rem; }
-    
-    button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; }
-    button.btn-danger { background: var(--danger); }
-    button.btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; margin-left: 0.25rem; }
+    /* BUTTONS */
+    .btn { background: var(--primary); color: white; padding: 0.6rem 1.2rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; font-size: 0.9rem; }
+    .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn-secondary { background: white; color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #f8fafc; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
-    th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-    th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; }
+    /* FOLDERS GRID */
+    .folders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
 
-    .actions { text-align: right; white-space: nowrap; }
+    .folder-card {
+      background: var(--folder-bg);
+      border: 2px solid var(--folder-border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 160px;
+    }
+
+    .folder-card::before {
+      content: '';
+      position: absolute;
+      top: -12px;
+      left: 16px;
+      width: 70px;
+      height: 12px;
+      background: var(--folder-tab);
+      border: 2px solid var(--folder-border);
+      border-bottom: none;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+    }
+
+    .folder-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.25); }
+
+    .folder-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .folder-title { font-size: 1.2rem; font-weight: 700; color: #78350f; word-break: break-word; }
+    .folder-badge { background: #fef3c7; border: 1px solid var(--folder-border); color: #92400e; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+
+    .folder-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; border-top: 1px dashed rgba(245, 158, 11, 0.4); padding-top: 0.75rem; }
+    .folder-actions { display: flex; gap: 0.25rem; }
+
+    /* VIEW INSIDE FOLDER (AGENT LIST) */
+    .folder-view { background: white; border-radius: var(--radius); border: 1px solid var(--border); padding: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .folder-view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+
+    .agent-row { display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0.5rem; background: white; transition: background 0.15s; }
+    .agent-row:hover { background: #f8fafc; }
+
+    /* ATTENDED TOGGLE SWITCH */
+    .attendance-toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; user-select: none; }
+    .attendance-toggle input { display: none; }
+    .toggle-pill {
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: #f1f5f9;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      transition: all 0.2s ease;
+    }
+    .attendance-toggle input:checked + .toggle-pill {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border-color: #86efac;
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+    }
+
+    /* MODAL WINDOWS */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 1rem; }
+    .modal { background: white; width: 100%; max-width: 650px; border-radius: var(--radius); padding: 2rem; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); }
+
+    /* FORM STYLES */
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+    .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+    input, select { padding: 0.65rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.95rem; width: 100%; }
+
+    /* TABLES */
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    th { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>Directory Management</h1>
+    
+    <!-- HEADER BAR -->
+    <header>
+      <h1>📁 Office Directory</h1>
+      <div class="header-btns">
+        <button class="btn btn-secondary" onclick="openModal('attendance-modal')">📊 See Attendance Data</button>
+        <button class="btn" onclick="openModal('office-modal')">➕ New Office</button>
+        <button class="btn" onclick="openModal('agent-modal')">👤 New Agent</button>
+      </div>
+    </header>
 
-    <div class="grid">
-      <!-- OFFICES MANAGEMENT -->
-      <div class="card">
-        <h2>Offices (Alphabetical)</h2>
-        <form id="office-form">
-          <input type="text" id="office-name" placeholder="New Office Name" required>
-          <button type="submit">Add Office</button>
-        </form>
+    <!-- MAIN HOME VIEW: OFFICE FOLDERS GRID -->
+    <main id="home-view">
+      <h2 style="margin-bottom: 1rem; color: var(--muted); font-size: 1rem;">Select an office folder to manage agents & mark attendance:</h2>
+      <div class="folders-grid" id="folders-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </main>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Office Name</th>
-              <th class="actions">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="offices-list"></tbody>
-        </table>
+    <!-- FOLDER DETAIL VIEW (Inside an Office) -->
+    <main id="folder-view" class="folder-view hidden">
+      <div class="folder-view-header">
+        <div>
+          <button class="btn btn-secondary btn-sm" onclick="showHomeView()">← Back to All Folders</button>
+          <h2 id="active-folder-title" style="margin-top: 0.5rem; font-size: 1.5rem;">Office Name</h2>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 0.85rem; color: var(--muted);">Today's Date:</span>
+          <div id="today-date-str" style="font-weight: 700;"></div>
+        </div>
       </div>
 
-      <!-- AGENTS MANAGEMENT -->
-      <div class="card">
-        <h2>Agents (Alphabetical)</h2>
-        <form id="agent-form">
-          <input type="text" id="agent-name" placeholder="New Agent Name" required>
+      <h3 style="font-size: 1rem; color: var(--muted); margin-bottom: 1rem;">Agents List</h3>
+      <div id="agents-list-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </main>
+
+  </div>
+
+  <!-- MODAL: ADD / EDIT OFFICE -->
+  <div class="modal-overlay" id="office-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="office-modal-title">Create Office</h2>
+        <button class="modal-close" onclick="closeModal('office-modal')">&times;</button>
+      </div>
+      <form id="office-form">
+        <input type="hidden" id="office-id">
+        <div class="form-group">
+          <label for="office-name">Office Name</label>
+          <input type="text" id="office-name" placeholder="e.g. Seattle Downtown" required>
+        </div>
+        <button type="submit" class="btn">Save Office</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT AGENT -->
+  <div class="modal-overlay" id="agent-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="agent-modal-title">Create Agent</h2>
+        <button class="modal-close" onclick="closeModal('agent-modal')">&times;</button>
+      </div>
+      <form id="agent-form">
+        <input type="hidden" id="agent-id">
+        <div class="form-group">
+          <label for="agent-name">Agent Full Name</label>
+          <input type="text" id="agent-name" placeholder="e.g. Sarah Jenkins" required>
+        </div>
+        <div class="form-group">
+          <label for="agent-office-select">Assigned Office</label>
           <select id="agent-office-select" required>
             <option value="">Select Office...</option>
           </select>
-          <button type="submit">Add Agent</button>
-        </form>
+        </div>
+        <button type="submit" class="btn">Save Agent</button>
+      </form>
+    </div>
+  </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Agent</th>
-              <th>Office</th>
-              <th class="actions">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="agents-list"></tbody>
-        </table>
+  <!-- MODAL: HISTORICAL ATTENDANCE DATA -->
+  <div class="modal-overlay" id="attendance-modal">
+    <div class="modal" style="max-width: 800px;">
+      <div class="modal-header">
+        <h2>📊 Historical Attendance Log</h2>
+        <button class="modal-close" onclick="closeModal('attendance-modal')">&times;</button>
       </div>
+
+      <!-- Filters -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+        <div>
+          <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Year</label>
+          <select id="filter-year" onchange="loadAttendanceLogs()">
+            <option value="">All Years</option>
+            <option value="2026" selected>2026</option>
+            <option value="2025">2025</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Month</label>
+          <select id="filter-month" onchange="loadAttendanceLogs()">
+            <option value="">All Months</option>
+            <option value="01">January</option>
+            <option value="02">February</option>
+            <option value="03">March</option>
+            <option value="04">April</option>
+            <option value="05">May</option>
+            <option value="06">June</option>
+            <option value="07">July</option>
+            <option value="08">August</option>
+            <option value="09">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Office</label>
+          <select id="filter-office" onchange="loadAttendanceLogs()">
+            <option value="">All Offices</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Logs Table -->
+      <table>
+        <thead>
+          <tr>
+            <th>Agent</th>
+            <th>Office</th>
+            <th>Date Attended</th>
+          </tr>
+        </thead>
+        <tbody id="attendance-logs-body">
+          <tr><td colspan="3" style="text-align:center;">Select filters to view logs...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
   <script>
-    // ⚠️ PASTE YOUR WORKER URL HERE ⚠️
     const API_URL = "https://attendance-api.gstillwindermerebss.workers.dev/api";
 
     let globalOffices = [];
+    let globalAgents = [];
+    let todayLogs = new Set(); // Stores agent IDs present today
+    let currentOfficeId = null;
+
+    const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
     document.addEventListener("DOMContentLoaded", () => {
-      loadOffices();
-      loadAgents();
+      document.getElementById("today-date-str").innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+      initData();
     });
 
-    // --- OFFICE LOGIC ---
-    async function loadOffices() {
-      const res = await fetch(`${API_URL}/offices`);
-      globalOffices = await res.json();
-      
-      // Update Dropdown in Agent Form
-      const select = document.getElementById("agent-office-select");
-      select.innerHTML = `<option value="">Select Office...</option>` + 
-        globalOffices.map(o => `<option value="${o.id}">${escape(o.office_name)}</option>`).join("");
+    async function initData() {
+      await loadTodayAttendance();
+      await loadOffices();
+      await loadAgents();
+    }
 
-      // Render Table
-      const list = document.getElementById("offices-list");
-      list.innerHTML = globalOffices.map(o => `
+    // --- DATA FETCHING ---
+    async function loadTodayAttendance() {
+      try {
+        const res = await fetch(`${API_URL}/attendance?year=${todayStr.split('-')[0]}&month=${todayStr.split('-')[1]}`);
+        const logs = await res.json();
+        if (Array.isArray(logs)) {
+          todayLogs = new Set(logs.filter(l => l.date === todayStr).map(l => l.agent_id));
+        }
+      } catch (e) { console.error("Error loading today's logs", e); }
+    }
+
+    async function loadOffices() {
+      try {
+        const res = await fetch(`${API_URL}/offices`);
+        const data = await res.json();
+        if (!Array.isArray(data)) return;
+
+        globalOffices = data;
+        renderFolders();
+        populateOfficeDropdowns();
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadAgents() {
+      try {
+        const res = await fetch(`${API_URL}/agents`);
+        const data = await res.json();
+        if (!Array.isArray(data)) return;
+
+        globalAgents = data;
+        renderFolders(); // Update counts
+        if (currentOfficeId) openFolder(currentOfficeId);
+      } catch (e) { console.error(e); }
+    }
+
+    // --- RENDER FOLDERS GRID ---
+    function renderFolders() {
+      const container = document.getElementById("folders-container");
+      if (globalOffices.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--muted); padding: 3rem;">No offices found. Click <strong>➕ New Office</strong> to get started.</div>`;
+        return;
+      }
+
+      container.innerHTML = globalOffices.map(o => {
+        const officeAgents = globalAgents.filter(a => a.office_id === o.id);
+        const attendedCount = officeAgents.filter(a => todayLogs.has(a.id)).length;
+
+        return `
+          <div class="folder-card" onclick="openFolder(${o.id})">
+            <div>
+              <div class="folder-header">
+                <div class="folder-title">📁 ${escape(o.office_name)}</div>
+                <span class="folder-badge">${officeAgents.length} Agents</span>
+              </div>
+            </div>
+            <div class="folder-footer">
+              <span style="font-size: 0.8rem; font-weight: 600; color: #92400e;">
+                ${attendedCount}/${officeAgents.length} Attended Today
+              </span>
+              <div class="folder-actions" onclick="event.stopPropagation()">
+                <button class="btn btn-secondary btn-sm" onclick="editOffice(${o.id}, '${escape(o.office_name)}')">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteOffice(${o.id})">🗑️</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // --- INSIDE FOLDER VIEW ---
+    function openFolder(officeId) {
+      currentOfficeId = officeId;
+      const office = globalOffices.find(o => o.id === officeId);
+      if (!office) return;
+
+      document.getElementById("active-folder-title").innerText = `📁 ${office.office_name}`;
+      document.getElementById("home-view").classList.add("hidden");
+      document.getElementById("folder-view").classList.remove("hidden");
+
+      const officeAgents = globalAgents.filter(a => a.office_id === officeId);
+      const container = document.getElementById("agents-list-container");
+
+      if (officeAgents.length === 0) {
+        container.innerHTML = `<p style="color: var(--muted); text-align: center; padding: 2rem;">No agents in this office yet.</p>`;
+        return;
+      }
+
+      container.innerHTML = officeAgents.map(a => {
+        const isAttended = todayLogs.has(a.id);
+        return `
+          <div class="agent-row">
+            <div>
+              <strong>${escape(a.agent_name)}</strong>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <label class="attendance-toggle">
+                <input type="checkbox" ${isAttended ? 'checked' : ''} onchange="toggleAttendance(${a.id}, '${escape(a.agent_name)}', ${office.id}, '${escape(office.office_name)}', this.checked)">
+                <span class="toggle-pill">${isAttended ? '✓ Attended Today' : '+ Mark Present'}</span>
+              </label>
+              <button class="btn btn-secondary btn-sm" onclick="editAgent(${a.id}, '${escape(a.agent_name)}', ${office.id})">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteAgent(${a.id})">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function showHomeView() {
+      currentOfficeId = null;
+      document.getElementById("folder-view").classList.add("hidden");
+      document.getElementById("home-view").classList.remove("hidden");
+      renderFolders();
+    }
+
+    // --- ATTENDANCE TOGGLE LOGIC ---
+    async function toggleAttendance(agentId, agentName, officeId, officeName, isChecked) {
+      if (isChecked) todayLogs.add(agentId);
+      else todayLogs.delete(agentId);
+
+      // Re-render toggle label state locally immediately
+      openFolder(officeId);
+
+      await fetch(`${API_URL}/attendance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agent_id: agentId,
+          agent_name: agentName,
+          office_id: officeId,
+          office_name: officeName,
+          date: todayStr,
+          attended: isChecked
+        })
+      });
+    }
+
+    // --- HISTORICAL ATTENDANCE LOGS ---
+    async function loadAttendanceLogs() {
+      const year = document.getElementById("filter-year").value;
+      const month = document.getElementById("filter-month").value;
+      const office_id = document.getElementById("filter-office").value;
+
+      const params = new URLSearchParams();
+      if (year) params.append("year", year);
+      if (month) params.append("month", month);
+      if (office_id) params.append("office_id", office_id);
+
+      const res = await fetch(`${API_URL}/attendance?${params.toString()}`);
+      const logs = await res.json();
+
+      const tbody = document.getElementById("attendance-logs-body");
+      if (!Array.isArray(logs) || logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color: var(--muted);">No logs matching selected filters.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.map(l => `
         <tr>
-          <td>${escape(o.office_name)}</td>
-          <td class="actions">
-            <button class="btn-sm" onclick="editOffice(${o.id}, '${escape(o.office_name)}')">Edit</button>
-            <button class="btn-sm btn-danger" onclick="deleteOffice(${o.id})">Delete</button>
-          </td>
+          <td><strong>${escape(l.agent_name)}</strong></td>
+          <td>${escape(l.office_name)}</td>
+          <td>${l.date}</td>
         </tr>
       `).join("");
     }
 
+    // --- CRUD ACTIONS ---
     document.getElementById("office-form").addEventListener("submit", async (e) => {
       e.preventDefault();
+      const id = document.getElementById("office-id").value;
       const office_name = document.getElementById("office-name").value.trim();
-      await fetch(`${API_URL}/offices`, {
-        method: "POST",
+
+      const method = id ? "PUT" : "POST";
+      const url = id ? `${API_URL}/offices/${id}` : `${API_URL}/offices`;
+
+      await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ office_name })
       });
-      document.getElementById("office-name").value = "";
-      loadOffices();
+
+      closeModal("office-modal");
+      initData();
     });
-
-    async function editOffice(id, currentName) {
-      const office_name = prompt("Update Office Name:", currentName);
-      if (office_name && office_name !== currentName) {
-        await fetch(`${API_URL}/offices/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ office_name })
-        });
-        loadOffices();
-        loadAgents(); // Reload agents to reflect updated office name
-      }
-    }
-
-    async function deleteOffice(id) {
-      if (confirm("Deleting this office will also delete associated agents. Continue?")) {
-        await fetch(`${API_URL}/offices/${id}`, { method: "DELETE" });
-        loadOffices();
-        loadAgents();
-      }
-    }
-
-    // --- AGENT LOGIC ---
-    async function loadAgents() {
-      const res = await fetch(`${API_URL}/agents`);
-      const agents = await res.json();
-
-      const list = document.getElementById("agents-list");
-      list.innerHTML = agents.map(a => `
-        <tr>
-          <td><strong>${escape(a.agent_name)}</strong></td>
-          <td>${escape(a.office_name)}</td>
-          <td class="actions">
-            <button class="btn-sm" onclick="editAgent(${a.id}, '${escape(a.agent_name)}', ${a.office_id})">Edit</button>
-            <button class="btn-sm btn-danger" onclick="deleteAgent(${a.id})">Delete</button>
-          </td>
-        </tr>
-      `).join("");
-    }
 
     document.getElementById("agent-form").addEventListener("submit", async (e) => {
       e.preventDefault();
+      const id = document.getElementById("agent-id").value;
       const agent_name = document.getElementById("agent-name").value.trim();
       const office_id = document.getElementById("agent-office-select").value;
 
-      await fetch(`${API_URL}/agents`, {
-        method: "POST",
+      const method = id ? "PUT" : "POST";
+      const url = id ? `${API_URL}/agents/${id}` : `${API_URL}/agents`;
+
+      await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agent_name, office_id })
       });
-      document.getElementById("agent-name").value = "";
-      loadAgents();
+
+      closeModal("agent-modal");
+      initData();
     });
 
-    async function editAgent(id, currentName, currentOfficeId) {
-      const agent_name = prompt("Update Agent Name:", currentName);
-      if (!agent_name) return;
+    function editOffice(id, name) {
+      document.getElementById("office-id").value = id;
+      document.getElementById("office-name").value = name;
+      document.getElementById("office-modal-title").innerText = "Edit Office";
+      openModal("office-modal");
+    }
 
-      await fetch(`${API_URL}/agents/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agent_name, office_id: currentOfficeId })
-      });
-      loadAgents();
+    async function deleteOffice(id) {
+      if (confirm("Delete this office and all associated agents?")) {
+        await fetch(`${API_URL}/offices/${id}`, { method: "DELETE" });
+        if (currentOfficeId === id) showHomeView();
+        initData();
+      }
+    }
+
+    function editAgent(id, name, officeId) {
+      document.getElementById("agent-id").value = id;
+      document.getElementById("agent-name").value = name;
+      document.getElementById("agent-office-select").value = officeId;
+      document.getElementById("agent-modal-title").innerText = "Edit Agent";
+      openModal("agent-modal");
     }
 
     async function deleteAgent(id) {
       if (confirm("Delete this agent?")) {
         await fetch(`${API_URL}/agents/${id}`, { method: "DELETE" });
-        loadAgents();
+        initData();
       }
     }
 
+    // --- MODAL & DROPDOWN UTILS ---
+    function openModal(id) {
+      if (id === 'attendance-modal') loadAttendanceLogs();
+      document.getElementById(id).style.display = "flex";
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = "none";
+      // Clear forms
+      if (id === 'office-modal') {
+        document.getElementById("office-id").value = "";
+        document.getElementById("office-name").value = "";
+      }
+      if (id === 'agent-modal') {
+        document.getElementById("agent-id").value = "";
+        document.getElementById("agent-name").value = "";
+      }
+    }
+
+    function populateOfficeDropdowns() {
+      const selects = [document.getElementById("agent-office-select"), document.getElementById("filter-office")];
+      selects.forEach((select, idx) => {
+        const defaultText = idx === 0 ? "Select Office..." : "All Offices";
+        select.innerHTML = `<option value="">${defaultText}</option>` + 
+          globalOffices.map(o => `<option value="${o.id}">${escape(o.office_name)}</option>`).join("");
+      });
+    }
+
     function escape(str) {
-      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+      return str ? str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
     }
   </script>
 </body>
