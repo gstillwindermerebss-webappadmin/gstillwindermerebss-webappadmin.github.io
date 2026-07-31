@@ -1,9 +1,0 @@
-{
-  "offices": [
-    { "id": "off_1", "name": "Headquarters" }
-  ],
-  "agents": [
-    { "id": "ag_1", "officeId": "off_1", "name": "Alice Johnson" }
-  ],
-  "attendance": []
-}
