@@ -1,2 +1,6 @@
-theme: jekyll-theme-minimal
-title: Windermere Realty Trust Web Apps
+# Site Settings
+title: Office Attendance Tracker
+description: Attendance tracking portal backed by Cloudflare D1
+
+# Disable Jekyll processing (Speeds up deployment & prevents file routing issues)
+theme: null
