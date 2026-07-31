@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Directory & Attendance Portal</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📂</text></svg>">
+  <!-- Chart.js for Attendance Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -109,9 +111,20 @@
       box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
     }
 
+    /* CHART CONTAINER */
+    .chart-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      height: 260px;
+    }
+
     /* MODALS */
     .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 1rem; }
-    .modal { background: var(--surface); width: 100%; max-width: 650px; border-radius: var(--radius); padding: 2rem; border: 1px solid var(--border); max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+    .modal { background: var(--surface); width: 100%; max-width: 850px; border-radius: var(--radius); padding: 2rem; border: 1px solid var(--border); max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); }
     .modal-close:hover { color: white; }
@@ -182,7 +195,7 @@
 
   <!-- MODAL: ADD / EDIT OFFICE -->
   <div class="modal-overlay" id="office-modal">
-    <div class="modal">
+    <div class="modal" style="max-width: 500px;">
       <div class="modal-header">
         <h2 id="office-modal-title">Create Office</h2>
         <button class="modal-close" onclick="closeModal('office-modal')">&times;</button>
@@ -198,16 +211,16 @@
     </div>
   </div>
 
-  <!-- MODAL: HISTORICAL ATTENDANCE DATA -->
+  <!-- MODAL: HISTORICAL ATTENDANCE DATA & ANALYTICS -->
   <div class="modal-overlay" id="attendance-modal">
-    <div class="modal" style="max-width: 800px;">
+    <div class="modal">
       <div class="modal-header">
-        <h2>📊 Attendance History</h2>
+        <h2>📊 Attendance Analytics & History</h2>
         <button class="modal-close" onclick="closeModal('attendance-modal')">&times;</button>
       </div>
 
       <!-- Filters -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
         <div>
           <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Year</label>
           <select id="filter-year" onchange="loadAttendanceLogs()">
@@ -240,7 +253,13 @@
         </div>
       </div>
 
+      <!-- VISUAL GRAPH CONTAINER -->
+      <div class="chart-box">
+        <canvas id="attendanceChart"></canvas>
+      </div>
+
       <!-- Logs Table -->
+      <h3 style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Detailed Attendance Records</h3>
       <table>
         <thead>
           <tr>
@@ -264,6 +283,7 @@
     let globalAgents = [];
     let activeLogs = new Set();
     let currentOfficeId = null;
+    let attendanceChart = null;
 
     // Selected Date defaults to today's date YYYY-MM-DD
     let selectedDateStr = new Date().toISOString().split('T')[0];
@@ -458,7 +478,7 @@
       });
     }
 
-    // --- HISTORICAL ATTENDANCE LOGS ---
+    // --- HISTORICAL ATTENDANCE LOGS & GRAPH RENDER ---
     async function loadAttendanceLogs() {
       const yearSelect = document.getElementById("filter-year");
       const monthSelect = document.getElementById("filter-month");
@@ -481,6 +501,7 @@
         
         if (!Array.isArray(logs) || logs.length === 0) {
           tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--muted); padding: 2rem;">No logs found for the selected filters.</td></tr>`;
+          renderGraph([], year, month);
           return;
         }
 
@@ -494,9 +515,86 @@
             </td>
           </tr>
         `).join("");
+
+        renderGraph(logs, year, month);
+
       } catch (err) {
         console.error("Failed to fetch attendance logs:", err);
       }
+    }
+
+    // --- RENDER DYNAMIC CHART ---
+    function renderGraph(logs, selectedYear, selectedMonth) {
+      const ctx = document.getElementById('attendanceChart').getContext('2d');
+      let labels = [];
+      let counts = [];
+
+      if (!selectedMonth) {
+        // Group by Month when "All Months" is selected
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        labels = monthNames;
+        counts = new Array(12).fill(0);
+
+        logs.forEach(log => {
+          const mIndex = parseInt(log.date.split('-')[1], 10) - 1;
+          if (mIndex >= 0 && mIndex < 12) counts[mIndex]++;
+        });
+      } else {
+        // Group by Day of the Month when a specific Month is selected
+        const daysInMonth = new Date(selectedYear || new Date().getFullYear(), parseInt(selectedMonth, 10), 0).getDate();
+        labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+        counts = new Array(daysInMonth).fill(0);
+
+        logs.forEach(log => {
+          const dayIndex = parseInt(log.date.split('-')[2], 10) - 1;
+          if (dayIndex >= 0 && dayIndex < daysInMonth) counts[dayIndex]++;
+        });
+      }
+
+      if (attendanceChart) {
+        attendanceChart.destroy();
+      }
+
+      attendanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: selectedMonth ? 'Daily Attendance' : 'Monthly Attendance',
+            data: counts,
+            backgroundColor: '#38bdf8',
+            borderColor: '#0284c7',
+            borderWidth: 1,
+            borderRadius: 6,
+            hoverBackgroundColor: '#7dd3fc'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1e293b',
+              titleColor: '#f8fafc',
+              bodyColor: '#38bdf8',
+              borderColor: '#334155',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11 } }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0, color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11 } },
+              grid: { color: '#334155' }
+            }
+          }
+        }
+      });
     }
 
     async function removeAttendanceLog(agentId, date, officeId) {
