@@ -205,7 +205,7 @@
           <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Year</label>
           <select id="filter-year" onchange="loadAttendanceLogs()">
             <option value="">All Years</option>
-            <option value="2026" selected>2026</option>
+            <option value="2026">2026</option>
             <option value="2025">2025</option>
           </select>
         </div>
@@ -439,31 +439,40 @@
 
     // --- HISTORICAL ATTENDANCE LOGS ---
     async function loadAttendanceLogs() {
-      const year = document.getElementById("filter-year").value;
-      const month = document.getElementById("filter-month").value;
-      const office_id = document.getElementById("filter-office").value;
+      const yearSelect = document.getElementById("filter-year");
+      const monthSelect = document.getElementById("filter-month");
+      const officeSelect = document.getElementById("filter-office");
+
+      const year = yearSelect.value;
+      const month = monthSelect.value;
+      const office_id = officeSelect.value;
 
       const params = new URLSearchParams();
       if (year) params.append("year", year);
       if (month) params.append("month", month);
       if (office_id) params.append("office_id", office_id);
 
-      const res = await fetch(`${API_URL}/attendance?${params.toString()}`);
-      const logs = await res.json();
+      try {
+        const res = await fetch(`${API_URL}/attendance?${params.toString()}`);
+        const logs = await res.json();
 
-      const tbody = document.getElementById("attendance-logs-body");
-      if (!Array.isArray(logs) || logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color: var(--muted);">No logs found matching selected filters.</td></tr>`;
-        return;
+        const tbody = document.getElementById("attendance-logs-body");
+        
+        if (!Array.isArray(logs) || logs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color: var(--muted); padding: 2rem;">No logs found for the selected filters.<br><small style="opacity:0.7">Try setting Year or Month to "All"</small></td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = logs.map(l => `
+          <tr>
+            <td><strong>${escape(l.agent_name)}</strong></td>
+            <td>${escape(l.office_name)}</td>
+            <td style="color: var(--primary); font-weight: 600;">${l.date}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        console.error("Failed to fetch attendance logs:", err);
       }
-
-      tbody.innerHTML = logs.map(l => `
-        <tr>
-          <td><strong>${escape(l.agent_name)}</strong></td>
-          <td>${escape(l.office_name)}</td>
-          <td style="color: var(--primary); font-weight: 600;">${l.date}</td>
-        </tr>
-      `).join("");
     }
 
     // --- OFFICE ACTIONS ---
@@ -509,7 +518,14 @@
 
     // --- MODAL UTILS ---
     function openModal(id) {
-      if (id === 'attendance-modal') loadAttendanceLogs();
+      if (id === 'attendance-modal') {
+        // Automatically default filter to current year on open
+        const currentYear = new Date().getFullYear().toString();
+        const yearSelect = document.getElementById("filter-year");
+        if (!yearSelect.value) yearSelect.value = currentYear;
+        
+        loadAttendanceLogs();
+      }
       document.getElementById(id).style.display = "flex";
     }
 
