@@ -366,7 +366,10 @@
 
   <script>
     const API_URL = "https://attendance-api.gstillwindermerebss.workers.dev/api";
-    const PORTAL_PASS = "allofficepassattendancewrt2026";
+    //const PORTAL_PASS = "allofficepassattendancewrt2026";
+    //const PORTAL_PASS = await fetch(`${API_URL}/access`).then(res => res.json()).then(data => data.universal_access);
+    //const PORTAL_PASS = (await env.DB.prepare("SELECT universal_access FROM access WHERE rowid = 1").first())?.universal_access;
+    const PORTAL_PASS = (await env.DB.prepare("SELECT universal_access FROM access WHERE rowid = 1 OR rowid = 2").first())?.universal_access;
 
     const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
