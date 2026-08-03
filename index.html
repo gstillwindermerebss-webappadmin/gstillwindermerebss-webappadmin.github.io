@@ -79,6 +79,20 @@
     .folder-view { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }
     .folder-view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem; }
 
+    /* MEETING DAY BADGE */
+    .meeting-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: var(--success-text);
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
     /* DATE PICKER BAR */
     .date-picker-box { display: flex; align-items: center; gap: 0.5rem; background: var(--bg); padding: 0.4rem 0.75rem; border-radius: 10px; border: 1px solid var(--border); }
     .date-picker-box input[type="date"] { background: transparent; border: none; color: var(--primary); font-weight: 700; font-size: 0.9rem; cursor: pointer; padding: 0; width: auto; }
@@ -193,7 +207,10 @@
       <div class="folder-view-header">
         <div>
           <button class="btn btn-secondary btn-sm" onclick="showHomeView()">← Back to Folders</button>
-          <h2 id="active-folder-title" style="margin-top: 0.75rem; font-size: 1.6rem;">Office Name</h2>
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem;">
+            <h2 id="active-folder-title" style="font-size: 1.6rem;">Office Name</h2>
+            <div id="office-meeting-badge-container"></div>
+          </div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
           <span style="font-size: 0.8rem; color: var(--muted);">Attendance Date</span>
@@ -230,6 +247,18 @@
           <label for="office-name">Office Name</label>
           <input type="text" id="office-name" placeholder="e.g. Bellevue HQ" required>
         </div>
+        <div class="form-group">
+          <label for="office-meeting-day">Weekly Meeting Day</label>
+          <select id="office-meeting-day" required>
+            <option value="Monday">Monday</option>
+            <option value="Tuesday" selected>Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+            <option value="Sunday">Sunday</option>
+          </select>
+        </div>
         <button type="submit" class="btn" style="width: 100%; justify-content: center;">Save Office</button>
       </form>
     </div>
@@ -244,7 +273,7 @@
       </div>
 
       <!-- Filters -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; align-items: flex-end;">
         <div>
           <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Year</label>
           <select id="filter-year" onchange="loadAttendanceLogs()">
@@ -275,6 +304,12 @@
             <option value="">All Offices</option>
           </select>
         </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.5rem;">
+          <input type="checkbox" id="filter-meeting-days-only" onchange="loadAttendanceLogs()" style="width: 18px; height: 18px; cursor: pointer;">
+          <label for="filter-meeting-days-only" style="font-size: 0.85rem; font-weight: 600; color: var(--text); cursor: pointer;">
+            Filter by Meeting Days Only
+          </label>
+        </div>
       </div>
 
       <!-- PERCENTAGE STAT CARDS -->
@@ -296,6 +331,7 @@
           <thead>
             <tr>
               <th>Office Name</th>
+              <th>Assigned Meeting Day</th>
               <th>Assigned Agents</th>
               <th>Total Check-ins</th>
               <th style="text-align: right;">Attendance Rate</th>
@@ -332,6 +368,8 @@
     const API_URL = "https://attendance-api.gstillwindermerebss.workers.dev/api";
     const PORTAL_PASS = "allofficepassattendancewrt2026";
 
+    const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
     let globalOffices = [];
     let globalAgents = [];
     let activeLogs = new Set();
@@ -347,6 +385,14 @@
         unlockPortal();
       }
     });
+
+    // Helper: Gets Day Name (e.g., "Tuesday") from a YYYY-MM-DD string
+    function getDayNameFromDateStr(dateStr) {
+      if (!dateStr) return "";
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const dateObj = new Date(year, month - 1, day);
+      return DAYS[dateObj.getDay()];
+    }
 
     // --- AUTHENTICATION HANDLERS ---
     function handleAuth(e) {
@@ -444,6 +490,7 @@
       container.innerHTML = globalOffices.map(o => {
         const officeAgents = globalAgents.filter(a => a.office_id === o.id);
         const attendedCount = officeAgents.filter(a => activeLogs.has(a.id)).length;
+        const meetingDayStr = o.meeting_day || 'Tuesday';
 
         return `
           <div class="folder-card" onclick="openFolder(${o.id})">
@@ -452,13 +499,14 @@
                 <div class="folder-title">📁 ${escape(o.office_name)}</div>
                 <span class="folder-badge">${officeAgents.length} Agents</span>
               </div>
+              <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.35rem;">📅 Meets on ${escape(meetingDayStr)}s</p>
             </div>
             <div class="folder-footer">
               <span style="font-size: 0.8rem; font-weight: 600; color: var(--success-text);">
                 ${attendedCount}/${officeAgents.length} Attended
               </span>
               <div class="folder-actions" onclick="event.stopPropagation()">
-                <button class="btn btn-secondary btn-sm" onclick="editOffice(${o.id}, '${escape(o.office_name)}')">✏️</button>
+                <button class="btn btn-secondary btn-sm" onclick="editOffice(${o.id}, '${escape(o.office_name)}', '${escape(meetingDayStr)}')">✏️</button>
                 <button class="btn btn-danger btn-sm" onclick="deleteOffice(${o.id})">🗑️</button>
               </div>
             </div>
@@ -469,7 +517,6 @@
 
     // --- INSIDE FOLDER VIEW ---
     async function openFolder(officeId) {
-      // Automatically reset to current date when opening a folder
       selectedDateStr = new Date().toISOString().split('T')[0];
       const dateInput = document.getElementById("selected-attendance-date");
       if (dateInput) {
@@ -488,6 +535,18 @@
       document.getElementById("home-view").classList.add("hidden");
       document.getElementById("folder-view").classList.remove("hidden");
 
+      // Check if selected date is this office's meeting day
+      const currentDayName = getDayNameFromDateStr(selectedDateStr);
+      const meetingDayName = office.meeting_day || 'Tuesday';
+      const isMeetingDay = currentDayName.toLowerCase() === meetingDayName.toLowerCase();
+
+      const badgeContainer = document.getElementById("office-meeting-badge-container");
+      if (isMeetingDay) {
+        badgeContainer.innerHTML = `<span class="meeting-badge">🟢 Meeting Day Today</span>`;
+      } else {
+        badgeContainer.innerHTML = ``;
+      }
+
       const officeAgents = globalAgents.filter(a => a.office_id === officeId);
       const container = document.getElementById("agents-list-container");
 
@@ -505,7 +564,7 @@
             </div>
             <div style="display: flex; align-items: center; gap: 0.75rem;">
               <label class="attendance-toggle">
-                <input type="checkbox" ${isAttended ? 'checked' : ''} onchange="toggleAttendance(${a.id}, '${escape(a.agent_name)}', ${office.id}, '${escape(office.office_name)}', this.checked)">
+                <input type="checkbox" ${isAttended ? 'checked' : ''} onchange="toggleAttendance(${a.id}, '${escape(a.agent_name)}', ${office.id}, '${escape(office.office_name)}', '${escape(office.meeting_day || 'Tuesday')}', this.checked)">
                 <span class="toggle-pill">${isAttended ? '✓ Attended' : '+ Mark Present'}</span>
               </label>
               <button class="btn btn-secondary btn-sm" onclick="editAgentInline(${a.id}, '${escape(a.agent_name)}')">✏️</button>
@@ -554,7 +613,7 @@
     }
 
     // --- ATTENDANCE TOGGLE LOGIC ---
-    async function toggleAttendance(agentId, agentName, officeId, officeName, isChecked) {
+    async function toggleAttendance(agentId, agentName, officeId, officeName, meetingDay, isChecked) {
       if (isChecked) activeLogs.add(agentId);
       else activeLogs.delete(agentId);
 
@@ -568,6 +627,7 @@
           agent_name: agentName,
           office_id: officeId,
           office_name: officeName,
+          meeting_day: meetingDay,
           date: selectedDateStr,
           attended: isChecked
         })
@@ -579,6 +639,7 @@
       const yearSelect = document.getElementById("filter-year");
       const monthSelect = document.getElementById("filter-month");
       const officeSelect = document.getElementById("filter-office");
+      const filterMeetingOnly = document.getElementById("filter-meeting-days-only").checked;
 
       const year = yearSelect.value;
       const month = monthSelect.value;
@@ -591,11 +652,23 @@
 
       try {
         const res = await fetch(`${API_URL}/attendance?${params.toString()}`);
-        const logs = await res.json();
+        let logs = await res.json();
+
+        if (!Array.isArray(logs)) logs = [];
+
+        // Apply frontend filtering for "Meeting Days Only" if selected
+        if (filterMeetingOnly) {
+          logs = logs.filter(log => {
+            const logDay = getDayNameFromDateStr(log.date);
+            const targetOffice = globalOffices.find(o => String(o.id) === String(log.office_id));
+            const officeMeetingDay = targetOffice ? targetOffice.meeting_day : (log.meeting_day || "Tuesday");
+            return logDay.toLowerCase() === (officeMeetingDay || "Tuesday").toLowerCase();
+          });
+        }
 
         const tbody = document.getElementById("attendance-logs-body");
         
-        if (!Array.isArray(logs) || logs.length === 0) {
+        if (logs.length === 0) {
           tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--muted); padding: 2rem;">No logs found for the selected filters.</td></tr>`;
           document.getElementById("metric-percentage").innerText = "0%";
           document.getElementById("metric-total-records").innerText = "0";
@@ -609,7 +682,7 @@
           <tr>
             <td><strong>${escape(l.agent_name)}</strong></td>
             <td>${escape(l.office_name)}</td>
-            <td style="color: var(--primary); font-weight: 600;">${l.date}</td>
+            <td style="color: var(--primary); font-weight: 600;">${l.date} (${getDayNameFromDateStr(l.date)})</td>
             <td style="text-align: right;">
               <button class="btn btn-danger btn-sm" title="Delete Log" onclick="removeAttendanceLog(${l.agent_id}, '${l.date}', ${l.office_id})">🗑️ Delete</button>
             </td>
@@ -617,7 +690,7 @@
         `).join("");
 
         // Calculate and display percentage metrics
-        calculatePercentageMetrics(logs, office_id);
+        calculatePercentageMetrics(logs, office_id, filterMeetingOnly);
 
         renderGraph(logs, year, month);
 
@@ -627,7 +700,7 @@
     }
 
     // --- CALCULATE ATTENDANCE PERCENTAGE METRICS ---
-    function calculatePercentageMetrics(logs, selectedOfficeId) {
+    function calculatePercentageMetrics(logs, selectedOfficeId, filterMeetingOnly) {
       document.getElementById("metric-total-records").innerText = logs.length;
 
       let relevantAgents = globalAgents;
@@ -635,7 +708,6 @@
         relevantAgents = globalAgents.filter(a => a.office_id === parseInt(selectedOfficeId, 10));
       }
 
-      // Calculate unique active dates in the dataset
       const uniqueDates = new Set(logs.map(l => l.date)).size || 1;
       const totalPossibleCheckins = relevantAgents.length * uniqueDates;
 
@@ -656,16 +728,23 @@
         breakdownBody.innerHTML = globalOffices.map(off => {
           const officeAgents = globalAgents.filter(a => a.office_id === off.id);
           const officeLogs = logs.filter(l => l.office_id === off.id);
-          const possible = officeAgents.length * uniqueDates;
+          
+          let officeUniqueDates = new Set(officeLogs.map(l => l.date)).size;
+          if (officeUniqueDates === 0 && logs.length > 0) {
+            officeUniqueDates = 1;
+          }
+
+          const possible = officeAgents.length * (officeUniqueDates || 1);
           
           let pct = "0.0%";
-          if (possible > 0) {
+          if (possible > 0 && officeLogs.length > 0) {
             pct = `${((officeLogs.length / possible) * 100).toFixed(1)}%`;
           }
 
           return `
             <tr>
               <td><strong>📁 ${escape(off.office_name)}</strong></td>
+              <td>${escape(off.meeting_day || 'Tuesday')}s</td>
               <td>${officeAgents.length} Agents</td>
               <td>${officeLogs.length} Check-ins</td>
               <td style="text-align: right; font-weight: 700; color: var(--success-text);">${pct}</td>
@@ -777,6 +856,7 @@
       e.preventDefault();
       const id = document.getElementById("office-id").value;
       const office_name = document.getElementById("office-name").value.trim();
+      const meeting_day = document.getElementById("office-meeting-day").value;
 
       const method = id ? "PUT" : "POST";
       const url = id ? `${API_URL}/offices/${id}` : `${API_URL}/offices`;
@@ -784,16 +864,17 @@
       await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ office_name })
+        body: JSON.stringify({ office_name, meeting_day })
       });
 
       closeModal("office-modal");
       initData();
     });
 
-    function editOffice(id, name) {
+    function editOffice(id, name, meetingDay) {
       document.getElementById("office-id").value = id;
       document.getElementById("office-name").value = name;
+      document.getElementById("office-meeting-day").value = meetingDay || "Tuesday";
       document.getElementById("office-modal-title").innerText = "Edit Office";
       openModal("office-modal");
     }
@@ -835,6 +916,7 @@
       if (id === 'office-modal') {
         document.getElementById("office-id").value = "";
         document.getElementById("office-name").value = "";
+        document.getElementById("office-meeting-day").value = "Tuesday";
       }
     }
 
