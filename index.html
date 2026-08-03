@@ -437,7 +437,12 @@
         const res = await fetch(`${API_URL}/attendance?year=${year}&month=${month}`);
         const logs = await res.json();
         if (Array.isArray(logs)) {
-          activeLogs = new Set(logs.filter(l => l.date === selectedDateStr).map(l => l.agent_id));
+          // Normalize comparison strings for agent IDs
+          activeLogs = new Set(
+            logs
+              .filter(l => String(l.date) === String(selectedDateStr) && Boolean(l.attended))
+              .map(l => String(l.agent_id))
+          );
         } else {
           activeLogs.clear();
         }
@@ -488,8 +493,8 @@
       }
 
       container.innerHTML = globalOffices.map(o => {
-        const officeAgents = globalAgents.filter(a => a.office_id === o.id);
-        const attendedCount = officeAgents.filter(a => activeLogs.has(a.id)).length;
+        const officeAgents = globalAgents.filter(a => String(a.office_id) === String(o.id));
+        const attendedCount = officeAgents.filter(a => activeLogs.has(String(a.id))).length;
         const meetingDayStr = o.meeting_day || 'Tuesday';
 
         return `
@@ -528,7 +533,7 @@
 
     function renderOfficeView(officeId) {
       currentOfficeId = officeId;
-      const office = globalOffices.find(o => o.id === officeId);
+      const office = globalOffices.find(o => String(o.id) === String(officeId));
       if (!office) return;
 
       document.getElementById("active-folder-title").innerText = `📁 ${office.office_name}`;
@@ -547,7 +552,7 @@
         badgeContainer.innerHTML = ``;
       }
 
-      const officeAgents = globalAgents.filter(a => a.office_id === officeId);
+      const officeAgents = globalAgents.filter(a => String(a.office_id) === String(officeId));
       const container = document.getElementById("agents-list-container");
 
       if (officeAgents.length === 0) {
@@ -556,7 +561,7 @@
       }
 
       container.innerHTML = officeAgents.map(a => {
-        const isAttended = activeLogs.has(a.id);
+        const isAttended = activeLogs.has(String(a.id));
         return `
           <div class="agent-row">
             <div>
@@ -564,11 +569,11 @@
             </div>
             <div style="display: flex; align-items: center; gap: 0.75rem;">
               <label class="attendance-toggle">
-                <input type="checkbox" ${isAttended ? 'checked' : ''} onchange="toggleAttendance(${a.id}, '${escape(a.agent_name)}', ${office.id}, '${escape(office.office_name)}', '${escape(office.meeting_day || 'Tuesday')}', this.checked)">
+                <input type="checkbox" ${isAttended ? 'checked' : ''} onchange="toggleAttendance('${a.id}', '${escape(a.agent_name)}', '${office.id}', '${escape(office.office_name)}', '${escape(office.meeting_day || 'Tuesday')}', this.checked)">
                 <span class="toggle-pill">${isAttended ? '✓ Attended' : '+ Mark Present'}</span>
               </label>
-              <button class="btn btn-secondary btn-sm" onclick="editAgentInline(${a.id}, '${escape(a.agent_name)}')">✏️</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteAgent(${a.id})">🗑️</button>
+              <button class="btn btn-secondary btn-sm" onclick="editAgentInline('${a.id}', '${escape(a.agent_name)}')">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteAgent('${a.id}')">🗑️</button>
             </div>
           </div>
         `;
@@ -614,8 +619,9 @@
 
     // --- ATTENDANCE TOGGLE LOGIC ---
     async function toggleAttendance(agentId, agentName, officeId, officeName, meetingDay, isChecked) {
-      if (isChecked) activeLogs.add(agentId);
-      else activeLogs.delete(agentId);
+      const agentIdStr = String(agentId);
+      if (isChecked) activeLogs.add(agentIdStr);
+      else activeLogs.delete(agentIdStr);
 
       renderOfficeView(officeId);
 
@@ -623,7 +629,7 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          agent_id: agentId,
+          agent_id: agentIdStr,
           agent_name: agentName,
           office_id: officeId,
           office_name: officeName,
@@ -656,6 +662,9 @@
 
         if (!Array.isArray(logs)) logs = [];
 
+        // Filter out non-attended records if soft deletes exist
+        logs = logs.filter(l => Boolean(l.attended));
+
         // Apply frontend filtering for "Meeting Days Only" if selected
         if (filterMeetingOnly) {
           logs = logs.filter(log => {
@@ -684,7 +693,7 @@
             <td>${escape(l.office_name)}</td>
             <td style="color: var(--primary); font-weight: 600;">${l.date} (${getDayNameFromDateStr(l.date)})</td>
             <td style="text-align: right;">
-              <button class="btn btn-danger btn-sm" title="Delete Log" onclick="removeAttendanceLog(${l.agent_id}, '${l.date}', ${l.office_id})">🗑️ Delete</button>
+              <button class="btn btn-danger btn-sm" title="Delete Log" onclick="removeAttendanceLog('${l.agent_id}', '${l.date}', '${l.office_id}')">🗑️ Delete</button>
             </td>
           </tr>
         `).join("");
@@ -705,7 +714,7 @@
 
       let relevantAgents = globalAgents;
       if (selectedOfficeId) {
-        relevantAgents = globalAgents.filter(a => a.office_id === parseInt(selectedOfficeId, 10));
+        relevantAgents = globalAgents.filter(a => String(a.office_id) === String(selectedOfficeId));
       }
 
       const uniqueDates = new Set(logs.map(l => l.date)).size || 1;
@@ -726,8 +735,8 @@
         breakdownBox.style.display = "block";
         
         breakdownBody.innerHTML = globalOffices.map(off => {
-          const officeAgents = globalAgents.filter(a => a.office_id === off.id);
-          const officeLogs = logs.filter(l => l.office_id === off.id);
+          const officeAgents = globalAgents.filter(a => String(a.office_id) === String(off.id));
+          const officeLogs = logs.filter(l => String(l.office_id) === String(off.id));
           
           let officeUniqueDates = new Set(officeLogs.map(l => l.date)).size;
           if (officeUniqueDates === 0 && logs.length > 0) {
@@ -834,7 +843,7 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            agent_id: agentId,
+            agent_id: String(agentId),
             date: date,
             office_id: officeId,
             attended: false
@@ -842,7 +851,7 @@
         });
 
         if (date === selectedDateStr) {
-          activeLogs.delete(agentId);
+          activeLogs.delete(String(agentId));
           renderFolders();
           if (currentOfficeId) renderOfficeView(currentOfficeId);
         }
@@ -882,7 +891,7 @@
     async function deleteOffice(id) {
       if (confirm("Delete this office and all associated agents?")) {
         await fetch(`${API_URL}/offices/${id}`, { method: "DELETE" });
-        if (currentOfficeId === id) showHomeView();
+        if (String(currentOfficeId) === String(id)) showHomeView();
         initData();
       }
     }
@@ -927,7 +936,7 @@
     }
 
     function escape(str) {
-      return str ? str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
+      return str ? String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
     }
   </script>
 </body>
