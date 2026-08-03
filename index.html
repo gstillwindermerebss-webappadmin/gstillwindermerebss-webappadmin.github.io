@@ -402,6 +402,20 @@
       return `${year}-${month}-${day}`;
     }
 
+    function parseLocalDate(dateStr) {
+      if (!dateStr) return new Date();
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function escape(str) {
+      return str ? str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
+    }
+
+    function unescape(str) {
+      return str ? str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'") : '';
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       // Check session storage for saved auth
       if (sessionStorage.getItem("portal_authed") === "true") {
@@ -537,7 +551,6 @@
       const office = globalOffices.find(o => o.id === officeId);
       if (!office) return;
 
-      // Always reset date to today when entering folder
       if (resetToToday) {
         selectedDateStr = getTodayString();
         document.getElementById("selected-attendance-date").value = selectedDateStr;
@@ -548,9 +561,7 @@
       document.getElementById("home-view").classList.add("hidden");
       document.getElementById("folder-view").classList.remove("hidden");
 
-      // Check if selected date is the office's Sales Meeting Day
-      const dateParts = selectedDateStr.split('-');
-      const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+      const dateObj = parseLocalDate(selectedDateStr);
       const currentDayName = DAYS_OF_WEEK[dateObj.getDay()];
 
       const banner = document.getElementById("meeting-day-banner");
@@ -614,8 +625,8 @@
     }
 
     async function editAgentInline(id, currentName) {
-      const agent_name = prompt("Update Agent Name:", currentName);
-      if (agent_name && agent_name !== currentName) {
+      const agent_name = prompt("Update Agent Name:", unescape(currentName));
+      if (agent_name && agent_name !== unescape(currentName)) {
         await fetch(`${API_URL}/agents/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -637,9 +648,9 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agent_id: agentId,
-          agent_name: agentName,
+          agent_name: unescape(agentName),
           office_id: officeId,
-          office_name: officeName,
+          office_name: unescape(officeName),
           date: selectedDateStr,
           attended: isChecked
         })
@@ -668,13 +679,11 @@
 
         if (!Array.isArray(logs)) logs = [];
 
-        // Apply Meeting Days Only Filter if checked
         if (meetingDaysOnly) {
           logs = logs.filter(l => {
             const office = globalOffices.find(o => o.id === l.office_id);
             if (!office || !office.meeting_day) return true;
-            const parts = l.date.split('-');
-            const dayName = DAYS_OF_WEEK[new Date(parts[0], parts[1] - 1, parts[2]).getDay()];
+            const dayName = DAYS_OF_WEEK[parseLocalDate(l.date).getDay()];
             return dayName.toLowerCase() === office.meeting_day.toLowerCase();
           });
         }
@@ -690,10 +699,8 @@
           return;
         }
 
-        // Render Logs Table with Day of Week
         tbody.innerHTML = logs.map(l => {
-          const parts = l.date.split('-');
-          const dayName = DAYS_OF_WEEK[new Date(parts[0], parts[1] - 1, parts[2]).getDay()];
+          const dayName = DAYS_OF_WEEK[parseLocalDate(l.date).getDay()];
           const office = globalOffices.find(o => o.id === l.office_id);
           const isMeetingDay = office && office.meeting_day && office.meeting_day.toLowerCase() === dayName.toLowerCase();
 
@@ -710,9 +717,7 @@
           `;
         }).join("");
 
-        // Calculate and display percentage metrics based on the selected period
         calculatePercentageMetrics(logs, office_id, year, month, meetingDaysOnly);
-
         renderGraph(logs, year, month);
 
       } catch (err) {
@@ -724,27 +729,12 @@
     function calculatePercentageMetrics(logs, selectedOfficeId, selectedYear, selectedMonth, meetingDaysOnly) {
       document.getElementById("metric-total-records").innerText = logs.length;
 
-      /*
-       * Attendance rate is calculated from the actual period selected in the
-       * analytics filters, not from the number of records returned by the API.
-       *
-       * Denominator:
-       *   - Selected office(s) / agents
-       *   - Number of calendar days in the selected period
-       *   - If "Meeting Days Only" is checked, only each office's designated
-       *     meeting days count as eligible attendance days.
-       *
-       * This prevents the percentage from changing simply because there are
-       * fewer attendance records in the API response.
-       */
-
       const today = new Date();
       today.setHours(23, 59, 59, 999);
 
       const START_YEAR = 2025;
       const currentYear = today.getFullYear();
 
-      // Build the actual date range represented by the Year/Month filters.
       let periodStart;
       let periodEnd;
 
@@ -758,28 +748,21 @@
         periodStart = new Date(y, 0, 1);
         periodEnd = new Date(y, 11, 31);
       } else if (selectedMonth) {
-        // "All Years" + a month: include that month for every year in the
-        // portal's reporting range.
         periodStart = new Date(START_YEAR, parseInt(selectedMonth, 10) - 1, 1);
         periodEnd = new Date(currentYear, parseInt(selectedMonth, 10), 0);
       } else {
-        // "All Years" + "All Months": use the full reporting period.
         periodStart = new Date(START_YEAR, 0, 1);
         periodEnd = new Date(currentYear, 11, 31);
       }
 
-      // Never count future dates.
       if (periodEnd > today) periodEnd = new Date(today);
 
-      // If the selected period is entirely in the future, there are no
-      // eligible attendance days yet.
       if (periodStart > periodEnd) {
         document.getElementById("metric-percentage").innerText = "0%";
         renderOfficeBreakdown(logs, selectedOfficeId, meetingDaysOnly, 0);
         return;
       }
 
-      // Determine which offices/agents are included by the Office filter.
       const relevantOffices = selectedOfficeId
         ? globalOffices.filter(o => o.id === parseInt(selectedOfficeId, 10))
         : globalOffices;
@@ -790,14 +773,6 @@
         relevantOfficeIds.has(a.office_id)
       );
 
-      /*
-       * Count eligible attendance opportunities.
-       *
-       * When Meeting Days Only is enabled, each agent gets one possible
-       * attendance for each date that matches that office's meeting day.
-       *
-       * Otherwise, every calendar day in the selected period is eligible.
-       */
       let totalPossibleCheckins = 0;
 
       for (
@@ -823,10 +798,8 @@
         });
       }
 
-      // Only count records that actually fall inside the selected period.
-      // The API may return a broader set depending on its parameters.
       const periodLogs = logs.filter(log => {
-        const logDate = new Date(`${log.date}T00:00:00`);
+        const logDate = parseLocalDate(log.date);
         return logDate >= periodStart &&
                logDate <= periodEnd &&
                relevantOfficeIds.has(log.office_id);
@@ -854,8 +827,6 @@
       const breakdownBox = document.getElementById("office-percentage-breakdown");
       const breakdownBody = document.getElementById("office-percentage-body");
 
-      // Keep the existing behavior: only show the breakdown when all offices
-      // are selected.
       if (selectedOfficeId || !globalOffices.length) {
         breakdownBox.style.display = "none";
         return;
@@ -1019,21 +990,17 @@
       initData();
     });
 
-   function editOffice(id, name, meetingDay) {
-  document.getElementById("office-id").value = id;
-  document.getElementById("office-name").value = unescape(name);
-  
-  // Normalize string for dropdown selection
-  const daySelect = document.getElementById("office-meeting-day");
-  const formattedDay = meetingDay ? meetingDay.charAt(0).toUpperCase() + meetingDay.slice(1).toLowerCase() : "Tuesday";
-  
-  daySelect.value = formattedDay;
-  document.getElementById("office-modal-title").innerText = "Edit Office";
-  openModal("office-modal");
-}
-    function unescape(str) {
-  return str ? str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'") : '';
-}
+    function editOffice(id, name, meetingDay) {
+      document.getElementById("office-id").value = id;
+      document.getElementById("office-name").value = unescape(name);
+      
+      const daySelect = document.getElementById("office-meeting-day");
+      const formattedDay = meetingDay ? meetingDay.charAt(0).toUpperCase() + meetingDay.slice(1).toLowerCase() : "Tuesday";
+      
+      daySelect.value = formattedDay;
+      document.getElementById("office-modal-title").innerText = "Edit Office";
+      openModal("office-modal");
+    }
 
     async function deleteOffice(id) {
       if (confirm("Delete this office and all associated agents?")) {
@@ -1080,10 +1047,6 @@
       const select = document.getElementById("filter-office");
       select.innerHTML = `<option value="">All Offices</option>` + 
         globalOffices.map(o => `<option value="${o.id}">${escape(o.office_name)}</option>`).join("");
-    }
-
-    function escape(str) {
-      return str ? str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
     }
   </script>
 </body>
