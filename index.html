@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Attendance Portal</title>
+  <title>Directory & Attendance Portal</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📂</text></svg>">
   <!-- Chart.js for Attendance Analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,6 +24,9 @@
       --success-bg: rgba(34, 197, 94, 0.15);
       --success-border: #22c55e;
       --success-text: #4ade80;
+      --warning-bg: rgba(245, 158, 11, 0.15);
+      --warning-border: #f59e0b;
+      --warning-text: #fbbf24;
       --danger: #f43f5e;
       --border: #334155;
       --radius: 16px;
@@ -71,13 +74,29 @@
     .folder-header { display: flex; justify-content: space-between; align-items: flex-start; }
     .folder-title { font-size: 1.25rem; font-weight: 700; color: #ffffff; word-break: break-word; }
     .folder-badge { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); color: var(--primary); padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .folder-meeting-day { font-size: 0.8rem; color: var(--muted); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.3rem; }
 
     .folder-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; border-top: 1px dashed var(--border); padding-top: 0.85rem; }
     .folder-actions { display: flex; gap: 0.35rem; }
 
     /* VIEW INSIDE FOLDER (AGENT LIST) */
     .folder-view { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }
-    .folder-view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem; }
+    .folder-view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem; }
+
+    /* MEETING DAY BANNER */
+    .meeting-banner {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      color: var(--warning-text);
+      padding: 0.75rem 1.25rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
 
     /* DATE PICKER BAR */
     .date-picker-box { display: flex; align-items: center; gap: 0.5rem; background: var(--bg); padding: 0.4rem 0.75rem; border-radius: 10px; border: 1px solid var(--border); }
@@ -116,6 +135,10 @@
     .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
     .stat-card-title { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
     .stat-card-value { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+
+    /* CHECKBOX FILTER */
+    .checkbox-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; color: var(--text); cursor: pointer; user-select: none; }
+    .checkbox-label input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--primary); cursor: pointer; }
 
     /* CHART CONTAINER */
     .chart-box {
@@ -172,7 +195,7 @@
     
     <!-- HEADER BAR -->
     <header>
-      <h1>📁 Offices Directory</h1>
+      <h1>📁 Offices & Directory</h1>
       <div class="header-btns">
         <button class="btn btn-secondary" onclick="openModal('attendance-modal')">📊 See Attendance Data</button>
         <button class="btn" onclick="openModal('office-modal')">➕ New Office</button>
@@ -203,6 +226,12 @@
         </div>
       </div>
 
+      <!-- MEETING DAY NOTIFICATION BANNER -->
+      <div id="meeting-day-banner" class="meeting-banner hidden">
+        <span>📢</span>
+        <span>Today is this office's designated Sales Meeting Day!</span>
+      </div>
+
       <!-- INLINE AGENT ADD FORM -->
       <form id="inline-agent-form" class="quick-add-bar" onsubmit="handleInlineAddAgent(event)">
         <input type="text" id="inline-agent-name" placeholder="Type new agent full name here..." required>
@@ -229,6 +258,18 @@
         <div class="form-group">
           <label for="office-name">Office Name</label>
           <input type="text" id="office-name" placeholder="e.g. Bellevue HQ" required>
+        </div>
+        <div class="form-group">
+          <label for="office-meeting-day">Sales Meeting Day of Week</label>
+          <select id="office-meeting-day" required>
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+            <option value="Sunday">Sunday</option>
+          </select>
         </div>
         <button type="submit" class="btn" style="width: 100%; justify-content: center;">Save Office</button>
       </form>
@@ -277,10 +318,18 @@
         </div>
       </div>
 
+      <!-- MEETING DAYS ONLY FILTER TOGGLE -->
+      <div style="margin-bottom: 1.25rem;">
+        <label class="checkbox-label">
+          <input type="checkbox" id="filter-meeting-days-only" onchange="loadAttendanceLogs()">
+          <span>Filter by Meeting Days Only 📅</span>
+        </label>
+      </div>
+
       <!-- PERCENTAGE STAT CARDS -->
       <div class="stat-card-grid">
         <div class="stat-card">
-          <span class="stat-card-title">Overall Attendance Rate</span>
+          <span class="stat-card-title">Attendance Rate (% of Period Days)</span>
           <span class="stat-card-value" id="metric-percentage">0%</span>
         </div>
         <div class="stat-card">
@@ -296,6 +345,7 @@
           <thead>
             <tr>
               <th>Office Name</th>
+              <th>Meeting Day</th>
               <th>Assigned Agents</th>
               <th>Total Check-ins</th>
               <th style="text-align: right;">Attendance Rate</th>
@@ -318,11 +368,12 @@
             <th>Agent Name</th>
             <th>Office</th>
             <th>Date Attended</th>
+            <th>Day of Week</th>
             <th style="text-align: right;">Action</th>
           </tr>
         </thead>
         <tbody id="attendance-logs-body">
-          <tr><td colspan="4" style="text-align:center;">Loading logs...</td></tr>
+          <tr><td colspan="5" style="text-align:center;">Loading logs...</td></tr>
         </tbody>
       </table>
     </div>
@@ -332,6 +383,8 @@
     const API_URL = "https://attendance-api.gstillwindermerebss.workers.dev/api";
     const PORTAL_PASS = "allofficepassattendancewrt2026";
 
+    const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
     let globalOffices = [];
     let globalAgents = [];
     let activeLogs = new Set();
@@ -339,7 +392,15 @@
     let attendanceChart = null;
 
     // Selected Date defaults to today's date YYYY-MM-DD
-    let selectedDateStr = new Date().toISOString().split('T')[0];
+    let selectedDateStr = getTodayString();
+
+    function getTodayString() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
 
     document.addEventListener("DOMContentLoaded", () => {
       // Check session storage for saved auth
@@ -406,7 +467,7 @@
       selectedDateStr = newDate;
       await loadAttendanceForSelectedDate();
       renderFolders();
-      if (currentOfficeId) openFolder(currentOfficeId);
+      if (currentOfficeId) openFolder(currentOfficeId, false);
     }
 
     async function loadOffices() {
@@ -429,7 +490,7 @@
 
         globalAgents = data;
         renderFolders();
-        if (currentOfficeId) openFolder(currentOfficeId);
+        if (currentOfficeId) openFolder(currentOfficeId, false);
       } catch (e) { console.error(e); }
     }
 
@@ -446,11 +507,14 @@
         const attendedCount = officeAgents.filter(a => activeLogs.has(a.id)).length;
 
         return `
-          <div class="folder-card" onclick="openFolder(${o.id})">
+          <div class="folder-card" onclick="openFolder(${o.id}, true)">
             <div>
               <div class="folder-header">
                 <div class="folder-title">📁 ${escape(o.office_name)}</div>
                 <span class="folder-badge">${officeAgents.length} Agents</span>
+              </div>
+              <div class="folder-meeting-day">
+                📅 Meeting Day: <strong>${o.meeting_day || 'Tuesday'}</strong>
               </div>
             </div>
             <div class="folder-footer">
@@ -458,7 +522,7 @@
                 ${attendedCount}/${officeAgents.length} Attended
               </span>
               <div class="folder-actions" onclick="event.stopPropagation()">
-                <button class="btn btn-secondary btn-sm" onclick="editOffice(${o.id}, '${escape(o.office_name)}')">✏️</button>
+                <button class="btn btn-secondary btn-sm" onclick="editOffice(${o.id}, '${escape(o.office_name)}', '${o.meeting_day || 'Tuesday'}')">✏️</button>
                 <button class="btn btn-danger btn-sm" onclick="deleteOffice(${o.id})">🗑️</button>
               </div>
             </div>
@@ -468,14 +532,33 @@
     }
 
     // --- INSIDE FOLDER VIEW ---
-    function openFolder(officeId) {
+    async function openFolder(officeId, resetToToday = true) {
       currentOfficeId = officeId;
       const office = globalOffices.find(o => o.id === officeId);
       if (!office) return;
 
+      // Always reset date to today when entering folder
+      if (resetToToday) {
+        selectedDateStr = getTodayString();
+        document.getElementById("selected-attendance-date").value = selectedDateStr;
+        await loadAttendanceForSelectedDate();
+      }
+
       document.getElementById("active-folder-title").innerText = `📁 ${office.office_name}`;
       document.getElementById("home-view").classList.add("hidden");
       document.getElementById("folder-view").classList.remove("hidden");
+
+      // Check if selected date is the office's Sales Meeting Day
+      const dateParts = selectedDateStr.split('-');
+      const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+      const currentDayName = DAYS_OF_WEEK[dateObj.getDay()];
+
+      const banner = document.getElementById("meeting-day-banner");
+      if (office.meeting_day && currentDayName.toLowerCase() === office.meeting_day.toLowerCase()) {
+        banner.classList.remove("hidden");
+      } else {
+        banner.classList.add("hidden");
+      }
 
       const officeAgents = globalAgents.filter(a => a.office_id === officeId);
       const container = document.getElementById("agents-list-container");
@@ -547,7 +630,7 @@
       if (isChecked) activeLogs.add(agentId);
       else activeLogs.delete(agentId);
 
-      openFolder(officeId);
+      openFolder(officeId, false);
 
       await fetch(`${API_URL}/attendance`, {
         method: "POST",
@@ -568,6 +651,7 @@
       const yearSelect = document.getElementById("filter-year");
       const monthSelect = document.getElementById("filter-month");
       const officeSelect = document.getElementById("filter-office");
+      const meetingDaysOnly = document.getElementById("filter-meeting-days-only").checked;
 
       const year = yearSelect.value;
       const month = monthSelect.value;
@@ -580,12 +664,25 @@
 
       try {
         const res = await fetch(`${API_URL}/attendance?${params.toString()}`);
-        const logs = await res.json();
+        let logs = await res.json();
+
+        if (!Array.isArray(logs)) logs = [];
+
+        // Apply Meeting Days Only Filter if checked
+        if (meetingDaysOnly) {
+          logs = logs.filter(l => {
+            const office = globalOffices.find(o => o.id === l.office_id);
+            if (!office || !office.meeting_day) return true;
+            const parts = l.date.split('-');
+            const dayName = DAYS_OF_WEEK[new Date(parts[0], parts[1] - 1, parts[2]).getDay()];
+            return dayName.toLowerCase() === office.meeting_day.toLowerCase();
+          });
+        }
 
         const tbody = document.getElementById("attendance-logs-body");
         
-        if (!Array.isArray(logs) || logs.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--muted); padding: 2rem;">No logs found for the selected filters.</td></tr>`;
+        if (logs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--muted); padding: 2rem;">No logs found for the selected filters.</td></tr>`;
           document.getElementById("metric-percentage").innerText = "0%";
           document.getElementById("metric-total-records").innerText = "0";
           document.getElementById("office-percentage-breakdown").style.display = "none";
@@ -593,20 +690,28 @@
           return;
         }
 
-        // Render Logs Table
-        tbody.innerHTML = logs.map(l => `
-          <tr>
-            <td><strong>${escape(l.agent_name)}</strong></td>
-            <td>${escape(l.office_name)}</td>
-            <td style="color: var(--primary); font-weight: 600;">${l.date}</td>
-            <td style="text-align: right;">
-              <button class="btn btn-danger btn-sm" title="Delete Log" onclick="removeAttendanceLog(${l.agent_id}, '${l.date}', ${l.office_id})">🗑️ Delete</button>
-            </td>
-          </tr>
-        `).join("");
+        // Render Logs Table with Day of Week
+        tbody.innerHTML = logs.map(l => {
+          const parts = l.date.split('-');
+          const dayName = DAYS_OF_WEEK[new Date(parts[0], parts[1] - 1, parts[2]).getDay()];
+          const office = globalOffices.find(o => o.id === l.office_id);
+          const isMeetingDay = office && office.meeting_day && office.meeting_day.toLowerCase() === dayName.toLowerCase();
 
-        // Calculate and display percentage metrics
-        calculatePercentageMetrics(logs, office_id);
+          return `
+            <tr>
+              <td><strong>${escape(l.agent_name)}</strong></td>
+              <td>${escape(l.office_name)}</td>
+              <td style="color: var(--primary); font-weight: 600;">${l.date}</td>
+              <td>${dayName} ${isMeetingDay ? '⭐' : ''}</td>
+              <td style="text-align: right;">
+                <button class="btn btn-danger btn-sm" title="Delete Log" onclick="removeAttendanceLog(${l.agent_id}, '${l.date}', ${l.office_id})">🗑️ Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        // Calculate and display percentage metrics based on the selected period
+        calculatePercentageMetrics(logs, office_id, year, month, meetingDaysOnly);
 
         renderGraph(logs, year, month);
 
@@ -615,8 +720,8 @@
       }
     }
 
-    // --- CALCULATE ATTENDANCE PERCENTAGE METRICS ---
-    function calculatePercentageMetrics(logs, selectedOfficeId) {
+    // --- CALCULATE ATTENDANCE PERCENTAGE METRICS BASED ON SELECTED PERIOD ---
+    function calculatePercentageMetrics(logs, selectedOfficeId, selectedYear, selectedMonth, meetingDaysOnly) {
       document.getElementById("metric-total-records").innerText = logs.length;
 
       let relevantAgents = globalAgents;
@@ -624,9 +729,25 @@
         relevantAgents = globalAgents.filter(a => a.office_id === parseInt(selectedOfficeId, 10));
       }
 
-      // Calculate unique active dates in the dataset
-      const uniqueDates = new Set(logs.map(l => l.date)).size || 1;
-      const totalPossibleCheckins = relevantAgents.length * uniqueDates;
+      // Determine total days in the selected period
+      let totalDaysInPeriod = 0;
+      const today = new Date();
+
+      if (selectedMonth) {
+        const y = parseInt(selectedYear || today.getFullYear(), 10);
+        const m = parseInt(selectedMonth, 10);
+        
+        if (y === today.getFullYear() && m === (today.getMonth() + 1)) {
+          totalDaysInPeriod = today.getDate(); // Up to today if current month
+        } else {
+          totalDaysInPeriod = new Date(y, m, 0).getDate(); // Full month days
+        }
+      } else {
+        // Fallback to distinct dates in the logs if no specific month selected
+        totalDaysInPeriod = new Set(logs.map(l => l.date)).size || 1;
+      }
+
+      const totalPossibleCheckins = relevantAgents.length * totalDaysInPeriod;
 
       if (totalPossibleCheckins > 0) {
         const rate = ((logs.length / totalPossibleCheckins) * 100).toFixed(1);
@@ -645,7 +766,7 @@
         breakdownBody.innerHTML = globalOffices.map(off => {
           const officeAgents = globalAgents.filter(a => a.office_id === off.id);
           const officeLogs = logs.filter(l => l.office_id === off.id);
-          const possible = officeAgents.length * uniqueDates;
+          const possible = officeAgents.length * totalDaysInPeriod;
           
           let pct = "0.0%";
           if (possible > 0) {
@@ -655,6 +776,7 @@
           return `
             <tr>
               <td><strong>📁 ${escape(off.office_name)}</strong></td>
+              <td>📅 ${off.meeting_day || 'Tuesday'}</td>
               <td>${officeAgents.length} Agents</td>
               <td>${officeLogs.length} Check-ins</td>
               <td style="text-align: right; font-weight: 700; color: var(--success-text);">${pct}</td>
@@ -754,7 +876,7 @@
         if (date === selectedDateStr) {
           activeLogs.delete(agentId);
           renderFolders();
-          if (currentOfficeId) openFolder(currentOfficeId);
+          if (currentOfficeId) openFolder(currentOfficeId, false);
         }
 
         loadAttendanceLogs();
@@ -766,6 +888,7 @@
       e.preventDefault();
       const id = document.getElementById("office-id").value;
       const office_name = document.getElementById("office-name").value.trim();
+      const meeting_day = document.getElementById("office-meeting-day").value;
 
       const method = id ? "PUT" : "POST";
       const url = id ? `${API_URL}/offices/${id}` : `${API_URL}/offices`;
@@ -773,16 +896,17 @@
       await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ office_name })
+        body: JSON.stringify({ office_name, meeting_day })
       });
 
       closeModal("office-modal");
       initData();
     });
 
-    function editOffice(id, name) {
+    function editOffice(id, name, meetingDay) {
       document.getElementById("office-id").value = id;
       document.getElementById("office-name").value = name;
+      document.getElementById("office-meeting-day").value = meetingDay || "Tuesday";
       document.getElementById("office-modal-title").innerText = "Edit Office";
       openModal("office-modal");
     }
@@ -824,6 +948,7 @@
       if (id === 'office-modal') {
         document.getElementById("office-id").value = "";
         document.getElementById("office-name").value = "";
+        document.getElementById("office-meeting-day").value = "Tuesday";
       }
     }
 
