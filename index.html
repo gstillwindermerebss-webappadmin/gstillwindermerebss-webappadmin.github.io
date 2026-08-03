@@ -406,7 +406,7 @@
       selectedDateStr = newDate;
       await loadAttendanceForSelectedDate();
       renderFolders();
-      if (currentOfficeId) openFolder(currentOfficeId);
+      if (currentOfficeId) renderOfficeView(currentOfficeId);
     }
 
     async function loadOffices() {
@@ -429,7 +429,7 @@
 
         globalAgents = data;
         renderFolders();
-        if (currentOfficeId) openFolder(currentOfficeId);
+        if (currentOfficeId) renderOfficeView(currentOfficeId);
       } catch (e) { console.error(e); }
     }
 
@@ -468,7 +468,18 @@
     }
 
     // --- INSIDE FOLDER VIEW ---
-    function openFolder(officeId) {
+    async function openFolder(officeId) {
+      // Automatically reset to current date when opening a folder
+      selectedDateStr = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById("selected-attendance-date");
+      if (dateInput) {
+        dateInput.value = selectedDateStr;
+      }
+      await loadAttendanceForSelectedDate();
+      renderOfficeView(officeId);
+    }
+
+    function renderOfficeView(officeId) {
       currentOfficeId = officeId;
       const office = globalOffices.find(o => o.id === officeId);
       if (!office) return;
@@ -547,7 +558,7 @@
       if (isChecked) activeLogs.add(agentId);
       else activeLogs.delete(agentId);
 
-      openFolder(officeId);
+      renderOfficeView(officeId);
 
       await fetch(`${API_URL}/attendance`, {
         method: "POST",
@@ -754,7 +765,7 @@
         if (date === selectedDateStr) {
           activeLogs.delete(agentId);
           renderFolders();
-          if (currentOfficeId) openFolder(currentOfficeId);
+          if (currentOfficeId) renderOfficeView(currentOfficeId);
         }
 
         loadAttendanceLogs();
