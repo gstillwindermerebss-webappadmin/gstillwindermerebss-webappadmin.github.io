@@ -329,7 +329,7 @@
       <!-- PERCENTAGE STAT CARDS -->
       <div class="stat-card-grid">
         <div class="stat-card">
-          <span class="stat-card-title">Attendance Rate (% of Period Days)</span>
+          <span class="stat-card-title">Attendance Rate (% of Selected Period)</span>
           <span class="stat-card-value" id="metric-percentage">0%</span>
         </div>
         <div class="stat-card">
@@ -724,68 +724,184 @@
     function calculatePercentageMetrics(logs, selectedOfficeId, selectedYear, selectedMonth, meetingDaysOnly) {
       document.getElementById("metric-total-records").innerText = logs.length;
 
-      let relevantAgents = globalAgents;
-      if (selectedOfficeId) {
-        relevantAgents = globalAgents.filter(a => a.office_id === parseInt(selectedOfficeId, 10));
-      }
+      /*
+       * Attendance rate is calculated from the actual period selected in the
+       * analytics filters, not from the number of records returned by the API.
+       *
+       * Denominator:
+       *   - Selected office(s) / agents
+       *   - Number of calendar days in the selected period
+       *   - If "Meeting Days Only" is checked, only each office's designated
+       *     meeting days count as eligible attendance days.
+       *
+       * This prevents the percentage from changing simply because there are
+       * fewer attendance records in the API response.
+       */
 
-      // Determine total days in the selected period
-      let totalDaysInPeriod = 0;
       const today = new Date();
+      today.setHours(23, 59, 59, 999);
 
-      if (selectedMonth) {
-        const y = parseInt(selectedYear || today.getFullYear(), 10);
+      const START_YEAR = 2025;
+      const currentYear = today.getFullYear();
+
+      // Build the actual date range represented by the Year/Month filters.
+      let periodStart;
+      let periodEnd;
+
+      if (selectedYear && selectedMonth) {
+        const y = parseInt(selectedYear, 10);
         const m = parseInt(selectedMonth, 10);
-        
-        if (y === today.getFullYear() && m === (today.getMonth() + 1)) {
-          totalDaysInPeriod = today.getDate(); // Up to today if current month
-        } else {
-          totalDaysInPeriod = new Date(y, m, 0).getDate(); // Full month days
-        }
+        periodStart = new Date(y, m - 1, 1);
+        periodEnd = new Date(y, m, 0);
+      } else if (selectedYear) {
+        const y = parseInt(selectedYear, 10);
+        periodStart = new Date(y, 0, 1);
+        periodEnd = new Date(y, 11, 31);
+      } else if (selectedMonth) {
+        // "All Years" + a month: include that month for every year in the
+        // portal's reporting range.
+        periodStart = new Date(START_YEAR, parseInt(selectedMonth, 10) - 1, 1);
+        periodEnd = new Date(currentYear, parseInt(selectedMonth, 10), 0);
       } else {
-        // Fallback to distinct dates in the logs if no specific month selected
-        totalDaysInPeriod = new Set(logs.map(l => l.date)).size || 1;
+        // "All Years" + "All Months": use the full reporting period.
+        periodStart = new Date(START_YEAR, 0, 1);
+        periodEnd = new Date(currentYear, 11, 31);
       }
 
-      const totalPossibleCheckins = relevantAgents.length * totalDaysInPeriod;
+      // Never count future dates.
+      if (periodEnd > today) periodEnd = new Date(today);
+
+      // If the selected period is entirely in the future, there are no
+      // eligible attendance days yet.
+      if (periodStart > periodEnd) {
+        document.getElementById("metric-percentage").innerText = "0%";
+        renderOfficeBreakdown(logs, selectedOfficeId, meetingDaysOnly, 0);
+        return;
+      }
+
+      // Determine which offices/agents are included by the Office filter.
+      const relevantOffices = selectedOfficeId
+        ? globalOffices.filter(o => o.id === parseInt(selectedOfficeId, 10))
+        : globalOffices;
+
+      const relevantOfficeIds = new Set(relevantOffices.map(o => o.id));
+
+      const relevantAgents = globalAgents.filter(a =>
+        relevantOfficeIds.has(a.office_id)
+      );
+
+      /*
+       * Count eligible attendance opportunities.
+       *
+       * When Meeting Days Only is enabled, each agent gets one possible
+       * attendance for each date that matches that office's meeting day.
+       *
+       * Otherwise, every calendar day in the selected period is eligible.
+       */
+      let totalPossibleCheckins = 0;
+
+      for (
+        let d = new Date(periodStart);
+        d <= periodEnd;
+        d.setDate(d.getDate() + 1)
+      ) {
+        const dayName = DAYS_OF_WEEK[d.getDay()];
+
+        relevantOffices.forEach(office => {
+          const officeAgents = relevantAgents.filter(a => a.office_id === office.id);
+
+          let eligibleDay = true;
+
+          if (meetingDaysOnly) {
+            eligibleDay = !!office.meeting_day &&
+              dayName.toLowerCase() === office.meeting_day.toLowerCase();
+          }
+
+          if (eligibleDay) {
+            totalPossibleCheckins += officeAgents.length;
+          }
+        });
+      }
+
+      // Only count records that actually fall inside the selected period.
+      // The API may return a broader set depending on its parameters.
+      const periodLogs = logs.filter(log => {
+        const logDate = new Date(`${log.date}T00:00:00`);
+        return logDate >= periodStart &&
+               logDate <= periodEnd &&
+               relevantOfficeIds.has(log.office_id);
+      });
 
       if (totalPossibleCheckins > 0) {
-        const rate = ((logs.length / totalPossibleCheckins) * 100).toFixed(1);
-        document.getElementById("metric-percentage").innerText = `${rate}%`;
+        const rate = ((periodLogs.length / totalPossibleCheckins) * 100);
+        document.getElementById("metric-percentage").innerText =
+          `${Math.min(rate, 100).toFixed(1)}%`;
       } else {
         document.getElementById("metric-percentage").innerText = "0%";
       }
 
-      // Render Breakdown per office if "All Offices" is selected
+      renderOfficeBreakdown(
+        periodLogs,
+        selectedOfficeId,
+        meetingDaysOnly,
+        periodStart,
+        periodEnd
+      );
+    }
+
+    // --- PER-OFFICE ATTENDANCE RATE ---
+    function renderOfficeBreakdown(logs, selectedOfficeId, meetingDaysOnly, periodStart, periodEnd) {
       const breakdownBox = document.getElementById("office-percentage-breakdown");
       const breakdownBody = document.getElementById("office-percentage-body");
 
-      if (!selectedOfficeId && globalOffices.length > 0) {
-        breakdownBox.style.display = "block";
-        
-        breakdownBody.innerHTML = globalOffices.map(off => {
-          const officeAgents = globalAgents.filter(a => a.office_id === off.id);
-          const officeLogs = logs.filter(l => l.office_id === off.id);
-          const possible = officeAgents.length * totalDaysInPeriod;
-          
-          let pct = "0.0%";
-          if (possible > 0) {
-            pct = `${((officeLogs.length / possible) * 100).toFixed(1)}%`;
-          }
-
-          return `
-            <tr>
-              <td><strong>📁 ${escape(off.office_name)}</strong></td>
-              <td>📅 ${off.meeting_day || 'Tuesday'}</td>
-              <td>${officeAgents.length} Agents</td>
-              <td>${officeLogs.length} Check-ins</td>
-              <td style="text-align: right; font-weight: 700; color: var(--success-text);">${pct}</td>
-            </tr>
-          `;
-        }).join("");
-      } else {
+      // Keep the existing behavior: only show the breakdown when all offices
+      // are selected.
+      if (selectedOfficeId || !globalOffices.length) {
         breakdownBox.style.display = "none";
+        return;
       }
+
+      breakdownBox.style.display = "block";
+
+      breakdownBody.innerHTML = globalOffices.map(off => {
+        const officeAgents = globalAgents.filter(a => a.office_id === off.id);
+        const officeLogs = logs.filter(l => l.office_id === off.id);
+
+        let eligibleDays = 0;
+
+        if (periodStart instanceof Date && periodEnd instanceof Date) {
+          for (
+            let d = new Date(periodStart);
+            d <= periodEnd;
+            d.setDate(d.getDate() + 1)
+          ) {
+            const dayName = DAYS_OF_WEEK[d.getDay()];
+
+            if (
+              !meetingDaysOnly ||
+              !off.meeting_day ||
+              dayName.toLowerCase() === off.meeting_day.toLowerCase()
+            ) {
+              eligibleDays++;
+            }
+          }
+        }
+
+        const possible = officeAgents.length * eligibleDays;
+        const pct = possible > 0
+          ? `${Math.min((officeLogs.length / possible) * 100, 100).toFixed(1)}%`
+          : "0.0%";
+
+        return `
+          <tr>
+            <td><strong>📁 ${escape(off.office_name)}</strong></td>
+            <td>📅 ${off.meeting_day || 'Tuesday'}</td>
+            <td>${officeAgents.length} Agents</td>
+            <td>${officeLogs.length} Check-ins</td>
+            <td style="text-align: right; font-weight: 700; color: var(--success-text);">${pct}</td>
+          </tr>
+        `;
+      }).join("");
     }
 
     // --- RENDER DYNAMIC CHART ---
