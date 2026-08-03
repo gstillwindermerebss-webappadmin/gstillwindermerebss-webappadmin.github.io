@@ -903,13 +903,21 @@
       initData();
     });
 
-    function editOffice(id, name, meetingDay) {
-      document.getElementById("office-id").value = id;
-      document.getElementById("office-name").value = name;
-      document.getElementById("office-meeting-day").value = meetingDay || "Tuesday";
-      document.getElementById("office-modal-title").innerText = "Edit Office";
-      openModal("office-modal");
-    }
+   function editOffice(id, name, meetingDay) {
+  document.getElementById("office-id").value = id;
+  document.getElementById("office-name").value = unescape(name);
+  
+  // Normalize string for dropdown selection
+  const daySelect = document.getElementById("office-meeting-day");
+  const formattedDay = meetingDay ? meetingDay.charAt(0).toUpperCase() + meetingDay.slice(1).toLowerCase() : "Tuesday";
+  
+  daySelect.value = formattedDay;
+  document.getElementById("office-modal-title").innerText = "Edit Office";
+  openModal("office-modal");
+}
+    function unescape(str) {
+  return str ? str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'") : '';
+}
 
     async function deleteOffice(id) {
       if (confirm("Delete this office and all associated agents?")) {
