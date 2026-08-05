@@ -372,27 +372,11 @@
       <div class="chart-box">
         <canvas id="attendanceChart"></canvas>
       </div>
-
-      <!-- Logs Table -->
-      <h3 style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Detailed Attendance Records</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Agent Name</th>
-            <th>Office</th>
-            <th>Date Attended</th>
-            <th style="text-align: right;">Action</th>
-          </tr>
-        </thead>
-        <tbody id="attendance-logs-body">
-          <tr><td colspan="4" style="text-align:center;">Loading logs...</td></tr>
-        </tbody>
-      </table>
     </div>
   </div>
 
   <script>
-    //const API_URL = "https://attendance-api.gstillwindermerebss.workers.dev/api";
+    const API_URL = "https://attendance-api.gstillwindermerebss.workers.dev/api";
     const PORTAL_PASS = "allofficepassattendancewrt2026";
 
     const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -727,28 +711,13 @@
           });
         }
 
-        const tbody = document.getElementById("attendance-logs-body");
-        
         if (logs.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--muted); padding: 2rem;">No logs found for the selected filters.</td></tr>`;
           document.getElementById("metric-percentage").innerText = "0%";
           document.getElementById("metric-total-records").innerText = "0";
           document.getElementById("office-percentage-breakdown").style.display = "none";
           renderGraph([], year, month);
           return;
         }
-
-        // Render Logs Table
-        tbody.innerHTML = logs.map(l => `
-          <tr>
-            <td><strong>${escape(l.agent_name)}</strong></td>
-            <td>${escape(l.office_name)}</td>
-            <td style="color: var(--primary); font-weight: 600;">${l.date} (${getDayNameFromDateStr(l.date)})</td>
-            <td style="text-align: right;">
-              <button class="btn btn-danger btn-sm" title="Delete Log" onclick="removeAttendanceLog('${l.agent_id}', '${l.date}', '${l.office_id}')">🗑️ Delete</button>
-            </td>
-          </tr>
-        `).join("");
 
         // Calculate and display percentage metrics
         calculatePercentageMetrics(logs, office_id, filterMeetingOnly);
@@ -895,29 +864,6 @@
           }
         }
       });
-    }
-
-    async function removeAttendanceLog(agentId, date, officeId) {
-      if (confirm(`Remove attendance record for this date (${date})?`)) {
-        await fetch(`${API_URL}/attendance`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            agent_id: String(agentId),
-            date: date,
-            office_id: officeId,
-            attended: false
-          })
-        });
-
-        if (date === selectedDateStr) {
-          activeLogs.delete(String(agentId));
-          renderFolders();
-          if (currentOfficeId) renderOfficeView(currentOfficeId);
-        }
-
-        loadAttendanceLogs();
-      }
     }
 
     // --- OFFICE ACTIONS ---
