@@ -15,6 +15,7 @@
       --surface: #1e293b;
       --surface-card: #334155;
       --text: #f8fafc;
+      --heading-text: #ffffff;
       --muted: #94a3b8;
       --primary: #38bdf8;
       --primary-hover: #0284c7;
@@ -27,20 +28,45 @@
       --danger: #f43f5e;
       --border: #334155;
       --radius: 16px;
+      --shadow: rgba(0, 0, 0, 0.3);
+      --modal-overlay: rgba(15, 23, 42, 0.85);
+      --date-picker-icon: 0.8;
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-card: #f1f5f9;
+      --text: #334155;
+      --heading-text: #0f172a;
+      --muted: #64748b;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --folder-bg: #ffffff;
+      --folder-border: #0284c7;
+      --folder-tab: #0284c7;
+      --success-bg: #dcfce7;
+      --success-border: #16a34a;
+      --success-text: #15803d;
+      --danger: #e11d48;
+      --border: #e2e8f0;
+      --shadow: rgba(0, 0, 0, 0.08);
+      --modal-overlay: rgba(15, 23, 42, 0.4);
+      --date-picker-icon: 0.2;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 2rem 1.5rem; min-height: 100vh; }
+    body { background: var(--bg); color: var(--text); padding: 2rem 1.5rem; min-height: 100vh; transition: background 0.3s, color 0.3s; }
     .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; }
 
     /* HEADER BAR */
     header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
-    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; display: flex; align-items: center; gap: 0.6rem; color: #ffffff; }
+    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; display: flex; align-items: center; gap: 0.6rem; color: var(--heading-text); }
     .header-btns { display: flex; gap: 0.75rem; align-items: center; }
 
     /* BUTTONS */
-    .btn { background: var(--primary); color: #0f172a; padding: 0.65rem 1.25rem; border-radius: 10px; border: none; font-weight: 700; font-size: 0.875rem; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; }
-    .btn:hover { background: #7dd3fc; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3); }
+    .btn { background: var(--primary); color: #ffffff; padding: 0.65rem 1.25rem; border-radius: 10px; border: none; font-weight: 700; font-size: 0.875rem; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; }
+    .btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 12px var(--shadow); }
     .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
     .btn-secondary:hover { background: var(--surface-card); border-color: var(--muted); transform: translateY(-1px); box-shadow: none; }
     .btn-danger { background: rgba(244, 63, 94, 0.15); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.3); }
@@ -63,20 +89,20 @@
       flex-direction: column;
       justify-content: space-between;
       min-height: 170px;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 10px 15px -3px var(--shadow);
     }
 
-    .folder-card:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); }
+    .folder-card:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 20px 25px -5px var(--shadow); }
 
     .folder-header { display: flex; justify-content: space-between; align-items: flex-start; }
-    .folder-title { font-size: 1.25rem; font-weight: 700; color: #ffffff; word-break: break-word; }
+    .folder-title { font-size: 1.25rem; font-weight: 700; color: var(--heading-text); word-break: break-word; }
     .folder-badge { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); color: var(--primary); padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
 
     .folder-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; border-top: 1px dashed var(--border); padding-top: 0.85rem; }
     .folder-actions { display: flex; gap: 0.35rem; }
 
     /* VIEW INSIDE FOLDER (AGENT LIST) */
-    .folder-view { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }
+    .folder-view { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 2rem; box-shadow: 0 20px 25px -5px var(--shadow); }
     .folder-view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem; }
 
     /* MEETING DAY BADGE */
@@ -96,11 +122,11 @@
     /* DATE PICKER BAR */
     .date-picker-box { display: flex; align-items: center; gap: 0.5rem; background: var(--bg); padding: 0.4rem 0.75rem; border-radius: 10px; border: 1px solid var(--border); }
     .date-picker-box input[type="date"] { background: transparent; border: none; color: var(--primary); font-weight: 700; font-size: 0.9rem; cursor: pointer; padding: 0; width: auto; }
-    .date-picker-box input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+    .date-picker-box input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(var(--date-picker-icon)); cursor: pointer; }
 
     /* INLINE AGENT ADD FIELD */
     .quick-add-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; background: var(--bg); padding: 0.75rem; border-radius: 12px; border: 1px solid var(--border); }
-    .quick-add-bar input { flex: 1; background: transparent; border: none; outline: none; color: white; font-size: 0.95rem; padding: 0.25rem 0.5rem; }
+    .quick-add-bar input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 0.95rem; padding: 0.25rem 0.5rem; }
 
     .agent-row { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 0.65rem; background: var(--bg); transition: all 0.2s; }
     .agent-row:hover { border-color: var(--muted); }
@@ -143,16 +169,16 @@
     }
 
     /* MODALS */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 1rem; }
-    .modal { background: var(--surface); width: 100%; max-width: 850px; border-radius: var(--radius); padding: 2rem; border: 1px solid var(--border); max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+    .modal-overlay { position: fixed; inset: 0; background: var(--modal-overlay); backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 1rem; }
+    .modal { background: var(--surface); color: var(--text); width: 100%; max-width: 850px; border-radius: var(--radius); padding: 2rem; border: 1px solid var(--border); max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px -12px var(--shadow); }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); }
-    .modal-close:hover { color: white; }
+    .modal-close:hover { color: var(--heading-text); }
 
     /* FORM STYLES */
     .form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
     .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
-    input, select { padding: 0.75rem; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: white; font-size: 0.95rem; width: 100%; outline: none; }
+    input, select { padding: 0.75rem; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.95rem; width: 100%; outline: none; }
     input:focus, select:focus { border-color: var(--primary); }
 
     /* TABLES */
@@ -169,7 +195,7 @@
   <div class="modal-overlay" id="auth-modal" style="display: flex;">
     <div class="modal" style="max-width: 420px; text-align: center;">
       <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔒</div>
-      <h2 style="margin-bottom: 0.5rem;">Access Restricted</h2>
+      <h2 style="margin-bottom: 0.5rem; color: var(--heading-text);">Access Restricted</h2>
       <p style="color: var(--muted); font-size: 0.875rem; margin-bottom: 1.5rem;">Please enter the password to access the Attendance Portal.</p>
       
       <form onsubmit="handleAuth(event)">
@@ -190,6 +216,7 @@
       <div class="header-btns">
         <button class="btn btn-secondary" onclick="openModal('attendance-modal')">📊 See Attendance Data</button>
         <button class="btn" onclick="openModal('office-modal')">➕ New Office</button>
+        <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Light/Dark Mode">☀️ Light</button>
         <button class="btn btn-secondary btn-sm" onclick="lockPortal()" title="Lock Session">🔒 Lock</button>
       </div>
     </header>
@@ -208,7 +235,7 @@
         <div>
           <button class="btn btn-secondary btn-sm" onclick="showHomeView()">← Back to Folders</button>
           <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem;">
-            <h2 id="active-folder-title" style="font-size: 1.6rem;">Office Name</h2>
+            <h2 id="active-folder-title" style="font-size: 1.6rem; color: var(--heading-text);">Office Name</h2>
             <div id="office-meeting-badge-container"></div>
           </div>
         </div>
@@ -238,7 +265,7 @@
   <div class="modal-overlay" id="office-modal">
     <div class="modal" style="max-width: 500px;">
       <div class="modal-header">
-        <h2 id="office-modal-title">Create Office</h2>
+        <h2 id="office-modal-title" style="color: var(--heading-text);">Create Office</h2>
         <button class="modal-close" onclick="closeModal('office-modal')">&times;</button>
       </div>
       <form id="office-form">
@@ -268,7 +295,7 @@
   <div class="modal-overlay" id="attendance-modal">
     <div class="modal">
       <div class="modal-header">
-        <h2>📊 Attendance Analytics & Metrics</h2>
+        <h2 style="color: var(--heading-text);">📊 Attendance Analytics & Metrics</h2>
         <button class="modal-close" onclick="closeModal('attendance-modal')">&times;</button>
       </div>
 
@@ -320,7 +347,7 @@
         </div>
         <div class="stat-card">
           <span class="stat-card-title">Total Records Recorded</span>
-          <span class="stat-card-value" id="metric-total-records" style="color: white;">0</span>
+          <span class="stat-card-value" id="metric-total-records" style="color: var(--heading-text);">0</span>
         </div>
       </div>
 
@@ -345,31 +372,12 @@
       <div class="chart-box">
         <canvas id="attendanceChart"></canvas>
       </div>
-
-      <!-- Logs Table -->
-      <h3 style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Detailed Attendance Records</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Agent Name</th>
-            <th>Office</th>
-            <th>Date Attended</th>
-            <th style="text-align: right;">Action</th>
-          </tr>
-        </thead>
-        <tbody id="attendance-logs-body">
-          <tr><td colspan="4" style="text-align:center;">Loading logs...</td></tr>
-        </tbody>
-      </table>
     </div>
   </div>
 
   <script>
     const API_URL = "https://attendance-api.gstillwindermerebss.workers.dev/api";
     const PORTAL_PASS = "allofficepassattendancewrt2026";
-    //const PORTAL_PASS = await fetch(`${API_URL}/access`).then(res => res.json()).then(data => data.universal_access);
-    //const PORTAL_PASS = (await env.DB.prepare("SELECT universal_access FROM access WHERE rowid = 1").first())?.universal_access;
-    //const PORTAL_PASS = (await env.DB.prepare("SELECT universal_access FROM access WHERE rowid = 1 OR rowid = 2").first())?.universal_access;
 
     const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -382,7 +390,32 @@
     // Selected Date defaults to today's date YYYY-MM-DD
     let selectedDateStr = new Date().toISOString().split('T')[0];
 
+    // Theme Management Logic
+    function initTheme() {
+      const savedTheme = localStorage.getItem("portal_theme") || "dark";
+      applyTheme(savedTheme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+      const newTheme = currentTheme === "dark" ? "light" : "dark";
+      localStorage.setItem("portal_theme", newTheme);
+      applyTheme(newTheme);
+      if (attendanceChart) {
+        loadAttendanceLogs(); // Refresh chart styles for light/dark mode
+      }
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      const themeBtn = document.getElementById("theme-toggle-btn");
+      if (themeBtn) {
+        themeBtn.innerHTML = theme === "dark" ? "☀️ Light" : "🌙 Dark";
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
+      initTheme();
       // Check session storage for saved auth
       if (sessionStorage.getItem("portal_authed") === "true") {
         unlockPortal();
@@ -568,7 +601,7 @@
         return `
           <div class="agent-row">
             <div>
-              <strong style="color: white; font-size: 0.95rem;">${escape(a.agent_name)}</strong>
+              <strong style="color: var(--heading-text); font-size: 0.95rem;">${escape(a.agent_name)}</strong>
             </div>
             <div style="display: flex; align-items: center; gap: 0.75rem;">
               <label class="attendance-toggle">
@@ -678,28 +711,13 @@
           });
         }
 
-        const tbody = document.getElementById("attendance-logs-body");
-        
         if (logs.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--muted); padding: 2rem;">No logs found for the selected filters.</td></tr>`;
           document.getElementById("metric-percentage").innerText = "0%";
           document.getElementById("metric-total-records").innerText = "0";
           document.getElementById("office-percentage-breakdown").style.display = "none";
           renderGraph([], year, month);
           return;
         }
-
-        // Render Logs Table
-        tbody.innerHTML = logs.map(l => `
-          <tr>
-            <td><strong>${escape(l.agent_name)}</strong></td>
-            <td>${escape(l.office_name)}</td>
-            <td style="color: var(--primary); font-weight: 600;">${l.date} (${getDayNameFromDateStr(l.date)})</td>
-            <td style="text-align: right;">
-              <button class="btn btn-danger btn-sm" title="Delete Log" onclick="removeAttendanceLog('${l.agent_id}', '${l.date}', '${l.office_id}')">🗑️ Delete</button>
-            </td>
-          </tr>
-        `).join("");
 
         // Calculate and display percentage metrics
         calculatePercentageMetrics(logs, office_id, filterMeetingOnly);
@@ -771,6 +789,15 @@
     // --- RENDER DYNAMIC CHART ---
     function renderGraph(logs, selectedYear, selectedMonth) {
       const ctx = document.getElementById('attendanceChart').getContext('2d');
+      const isLight = document.documentElement.getAttribute("data-theme") === "light";
+      
+      const primaryColor = isLight ? '#0284c7' : '#38bdf8';
+      const borderColor = isLight ? '#0369a1' : '#0284c7';
+      const gridColor = isLight ? '#e2e8f0' : '#334155';
+      const textColor = isLight ? '#64748b' : '#94a3b8';
+      const tooltipBg = isLight ? '#ffffff' : '#1e293b';
+      const tooltipText = isLight ? '#0f172a' : '#f8fafc';
+
       let labels = [];
       let counts = [];
 
@@ -805,11 +832,10 @@
           datasets: [{
             label: selectedMonth ? 'Daily Attendance' : 'Monthly Attendance',
             data: counts,
-            backgroundColor: '#38bdf8',
-            borderColor: '#0284c7',
+            backgroundColor: primaryColor,
+            borderColor: borderColor,
             borderWidth: 1,
-            borderRadius: 6,
-            hoverBackgroundColor: '#7dd3fc'
+            borderRadius: 6
           }]
         },
         options: {
@@ -818,49 +844,26 @@
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: '#1e293b',
-              titleColor: '#f8fafc',
-              bodyColor: '#38bdf8',
-              borderColor: '#334155',
+              backgroundColor: tooltipBg,
+              titleColor: tooltipText,
+              bodyColor: primaryColor,
+              borderColor: gridColor,
               borderWidth: 1
             }
           },
           scales: {
             x: {
               grid: { display: false },
-              ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11 } }
+              ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 11 } }
             },
             y: {
               beginAtZero: true,
-              ticks: { precision: 0, color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11 } },
-              grid: { color: '#334155' }
+              ticks: { precision: 0, color: textColor, font: { family: 'Plus Jakarta Sans', size: 11 } },
+              grid: { color: gridColor }
             }
           }
         }
       });
-    }
-
-    async function removeAttendanceLog(agentId, date, officeId) {
-      if (confirm(`Remove attendance record for this date (${date})?`)) {
-        await fetch(`${API_URL}/attendance`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            agent_id: String(agentId),
-            date: date,
-            office_id: officeId,
-            attended: false
-          })
-        });
-
-        if (date === selectedDateStr) {
-          activeLogs.delete(String(agentId));
-          renderFolders();
-          if (currentOfficeId) renderOfficeView(currentOfficeId);
-        }
-
-        loadAttendanceLogs();
-      }
     }
 
     // --- OFFICE ACTIONS ---
