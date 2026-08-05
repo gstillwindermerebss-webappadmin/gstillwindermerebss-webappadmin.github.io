@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Portal</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📂</text></svg>">
+  <!-- Chart.js for Attendance Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-card: #334155;
+      --text: #f8fafc;
+      --heading-text: #ffffff;
+      --muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --folder-bg: #1e293b;
+      --folder-border: #38bdf8;
+      --folder-tab: #0284c7;
+      --success-bg: rgba(34, 197, 94, 0.15);
+      --success-border: #22c55e;
+      --success-text: #4ade80;
+      --danger: #f43f5e;
+      --border: #334155;
+      --radius: 16px;
+      --shadow: rgba(0, 0, 0, 0.3);
+      --modal-overlay: rgba(15, 23, 42, 0.85);
+      --date-picker-icon: 0.8;
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-card: #f1f5f9;
+      --text: #334155;
+      --heading-text: #0f172a;
+      --muted: #64748b;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --folder-bg: #ffffff;
+      --folder-border: #0284c7;
+      --folder-tab: #0284c7;
+      --success-bg: #dcfce7;
+      --success-border: #16a34a;
+      --success-text: #15803d;
+      --danger: #e11d48;
+      --border: #e2e8f0;
+      --shadow: rgba(0, 0, 0, 0.08);
+      --modal-overlay: rgba(15, 23, 42, 0.4);
+      --date-picker-icon: 0.2;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 2rem 1.5rem; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+    .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; }
+
+    /* HEADER BAR */
+    header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; display: flex; align-items: center; gap: 0.6rem; color: var(--heading-text); }
+    .header-btns { display: flex; gap: 0.75rem; align-items: center; }
+
+    /* BUTTONS */
+    .btn { background: var(--primary); color: #ffffff; padding: 0.65rem 1.25rem; border-radius: 10px; border: none; font-weight: 700; font-size: 0.875rem; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; }
+    .btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 12px var(--shadow); }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--surface-card); border-color: var(--muted); transform: translateY(-1px); box-shadow: none; }
+    .btn-danger { background: rgba(244, 63, 94, 0.15); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.3); }
+    .btn-danger:hover { background: var(--danger); color: white; }
+    .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; border-radius: 6px; }
+
+    /* FOLDERS GRID */
+    .folders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.75rem; }
+
+    .folder-card {
+      background: var(--folder-bg);
+      border: 1px solid var(--border);
+      border-top: 4px solid var(--folder-border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 170px;
+      box-shadow: 0 10px 15px -3px var(--shadow);
+    }
+
+    .folder-card:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 20px 25px -5px var(--shadow); }
+
+    .folder-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .folder-title { font-size: 1.25rem; font-weight: 700; color: var(--heading-text); word-break: break-word; }
+    .folder-badge { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); color: var(--primary); padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+
+    .folder-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; border-top: 1px dashed var(--border); padding-top: 0.85rem; }
+    .folder-actions { display: flex; gap: 0.35rem; }
+
+    /* VIEW INSIDE FOLDER (AGENT LIST) */
+    .folder-view { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 2rem; box-shadow: 0 20px 25px -5px var(--shadow); }
+    .folder-view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem; }
+
+    /* MEETING DAY BADGE */
+    .meeting-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: var(--success-text);
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    /* DATE PICKER BAR */
+    .date-picker-box { display: flex; align-items: center; gap: 0.5rem; background: var(--bg); padding: 0.4rem 0.75rem; border-radius: 10px; border: 1px solid var(--border); }
+    .date-picker-box input[type="date"] { background: transparent; border: none; color: var(--primary); font-weight: 700; font-size: 0.9rem; cursor: pointer; padding: 0; width: auto; }
+    .date-picker-box input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(var(--date-picker-icon)); cursor: pointer; }
+
+    /* INLINE AGENT ADD FIELD */
+    .quick-add-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; background: var(--bg); padding: 0.75rem; border-radius: 12px; border: 1px solid var(--border); }
+    .quick-add-bar input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 0.95rem; padding: 0.25rem 0.5rem; }
+
+    .agent-row { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 0.65rem; background: var(--bg); transition: all 0.2s; }
+    .agent-row:hover { border-color: var(--muted); }
+
+    /* ATTENDED TOGGLE PILL */
+    .attendance-toggle { display: flex; align-items: center; cursor: pointer; user-select: none; }
+    .attendance-toggle input { display: none; }
+    .toggle-pill {
+      padding: 0.45rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: var(--surface-card);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      transition: all 0.2s ease;
+    }
+    .attendance-toggle input:checked + .toggle-pill {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border-color: var(--success-border);
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+    }
+
+    /* METRIC STAT CARDS */
+    .stat-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
+    .stat-card-title { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card-value { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+
+    /* CHART CONTAINER */
+    .chart-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      height: 260px;
+    }
+
+    /* MODALS */
+    .modal-overlay { position: fixed; inset: 0; background: var(--modal-overlay); backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 1rem; }
+    .modal { background: var(--surface); color: var(--text); width: 100%; max-width: 850px; border-radius: var(--radius); padding: 2rem; border: 1px solid var(--border); max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px -12px var(--shadow); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); }
+    .modal-close:hover { color: var(--heading-text); }
+
+    /* FORM STYLES */
+    .form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+    input, select { padding: 0.75rem; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.95rem; width: 100%; outline: none; }
+    input:focus, select:focus { border-color: var(--primary); }
+
+    /* TABLES */
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { text-align: left; padding: 0.85rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    th { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- AUTH / PASSWORD MODAL -->
+  <div class="modal-overlay" id="auth-modal" style="display: flex;">
+    <div class="modal" style="max-width: 420px; text-align: center;">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔒</div>
+      <h2 style="margin-bottom: 0.5rem; color: var(--heading-text);">Access Restricted</h2>
+      <p style="color: var(--muted); font-size: 0.875rem; margin-bottom: 1.5rem;">Please enter the password to access the Attendance Portal.</p>
+      
+      <form onsubmit="handleAuth(event)">
+        <div class="form-group" style="text-align: left;">
+          <input type="password" id="auth-pass" placeholder="Enter Portal Password" required autofocus>
+        </div>
+        <p id="auth-error" style="color: var(--danger); font-size: 0.85rem; margin-bottom: 1rem; display: none;">Incorrect Password. Try again.</p>
+        <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 0.85rem;">Unlock Portal</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="container hidden" id="portal-app">
+    
+    <!-- HEADER BAR -->
+    <header>
+      <h1>📁 Offices Directory</h1>
+      <div class="header-btns">
+        <button class="btn btn-secondary" onclick="openModal('attendance-modal')">📊 See Attendance Data</button>
+        <button class="btn" onclick="openModal('office-modal')">➕ New Office</button>
+        <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Light/Dark Mode">☀️ Light</button>
+        <button class="btn btn-secondary btn-sm" onclick="lockPortal()" title="Lock Session">🔒 Lock</button>
+      </div>
+    </header>
+
+    <!-- MAIN HOME VIEW: OFFICE FOLDERS GRID -->
+    <main id="home-view">
+      <h2 style="margin-bottom: 1.25rem; color: var(--muted); font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Select an Office Folder:</h2>
+      <div class="folders-grid" id="folders-container">
+        <!-- Dynamic Folders Rendered Here -->
+      </div>
+    </main>
+
+    <!-- FOLDER DETAIL VIEW (Inside an Office) -->
+    <main id="folder-view" class="folder-view hidden">
+      <div class="folder-view-header">
+        <div>
+          <button class="btn btn-secondary btn-sm" onclick="showHomeView()">← Back to Folders</button>
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem;">
+            <h2 id="active-folder-title" style="font-size: 1.6rem; color: var(--heading-text);">Office Name</h2>
+            <div id="office-meeting-badge-container"></div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
+          <span style="font-size: 0.8rem; color: var(--muted);">Attendance Date</span>
+          <div class="date-picker-box">
+            📅 <input type="date" id="selected-attendance-date" onchange="changeAttendanceDate(this.value)">
+          </div>
+        </div>
+      </div>
+
+      <!-- INLINE AGENT ADD FORM -->
+      <form id="inline-agent-form" class="quick-add-bar" onsubmit="handleInlineAddAgent(event)">
+        <input type="text" id="inline-agent-name" placeholder="Type new agent full name here..." required>
+        <button type="submit" class="btn btn-sm">➕ Add Agent to this Office</button>
+      </form>
+
+      <h3 style="font-size: 0.9rem; color: var(--muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">Assigned Agents</h3>
+      <div id="agents-list-container">
+        <!-- Dynamic Agents Rendered Here -->
+      </div>
+    </main>
+
+  </div>
+
+  <!-- MODAL: ADD / EDIT OFFICE -->
+  <div class="modal-overlay" id="office-modal">
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2 id="office-modal-title" style="color: var(--heading-text);">Create Office</h2>
+        <button class="modal-close" onclick="closeModal('office-modal')">&times;</button>
+      </div>
+      <form id="office-form">
+        <input type="hidden" id="office-id">
+        <div class="form-group">
+          <label for="office-name">Office Name</label>
+          <input type="text" id="office-name" placeholder="e.g. Bellevue HQ" required>
+        </div>
+        <div class="form-group">
+          <label for="office-meeting-day">Weekly Meeting Day</label>
+          <select id="office-meeting-day" required>
+            <option value="Monday">Monday</option>
+            <option value="Tuesday" selected>Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+            <option value="Sunday">Sunday</option>
+          </select>
+        </div>
+        <button type="submit" class="btn" style="width: 100%; justify-content: center;">Save Office</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: HISTORICAL ATTENDANCE DATA & ANALYTICS -->
+  <div class="modal-overlay" id="attendance-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 style="color: var(--heading-text);">📊 Attendance Analytics & Metrics</h2>
+        <button class="modal-close" onclick="closeModal('attendance-modal')">&times;</button>
+      </div>
+
+      <!-- Filters -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; align-items: flex-end;">
+        <div>
+          <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Year</label>
+          <select id="filter-year" onchange="loadAttendanceLogs()">
+            <!-- Dynamically Populated -->
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Month</label>
+          <select id="filter-month" onchange="loadAttendanceLogs()">
+            <option value="">All Months</option>
+            <option value="01">January</option>
+            <option value="02">February</option>
+            <option value="03">March</option>
+            <option value="04">April</option>
+            <option value="05">May</option>
+            <option value="06">June</option>
+            <option value="07">July</option>
+            <option value="08">August</option>
+            <option value="09">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Office</label>
+          <select id="filter-office" onchange="loadAttendanceLogs()">
+            <option value="">All Offices</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.5rem;">
+          <input type="checkbox" id="filter-meeting-days-only" onchange="loadAttendanceLogs()" style="width: 18px; height: 18px; cursor: pointer;">
+          <label for="filter-meeting-days-only" style="font-size: 0.85rem; font-weight: 600; color: var(--text); cursor: pointer;">
+            Filter by Meeting Days Only
+          </label>
+        </div>
+      </div>
+
+      <!-- PERCENTAGE STAT CARDS -->
+      <div class="stat-card-grid">
+        <div class="stat-card">
+          <span class="stat-card-title">Overall Attendance Rate</span>
+          <span class="stat-card-value" id="metric-percentage">0%</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card-title">Total Records Recorded</span>
+          <span class="stat-card-value" id="metric-total-records" style="color: var(--heading-text);">0</span>
+        </div>
+      </div>
+
+      <!-- PER OFFICE PERCENTAGE BREAKDOWN (RENDERED WHEN ALL OFFICES SELECTED) -->
+      <div id="office-percentage-breakdown" style="margin-bottom: 1.5rem; display: none;">
+        <h3 style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Office % Breakdown</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Office Name</th>
+              <th>Assigned Meeting Day</th>
+              <th>Assigned Agents</th>
+              <th>Total Check-ins</th>
+              <th style="text-align: right;">Attendance Rate</th>
+            </tr>
+          </thead>
+          <tbody id="office-percentage-body"></tbody>
+        </table>
+      </div>
+
+      <!-- VISUAL GRAPH CONTAINER -->
+      <div class="chart-box">
+        <canvas id="attendanceChart"></canvas>
+      </div>
+
+      <!-- Logs Table -->
+      <h3 style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Detailed Attendance Records</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Agent Name</th>
+            <th>Office</th>
+            <th>Date Attended</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="attendance-logs-body">
+          <tr><td colspan="4" style="text-align:center;">Loading logs...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://attendance-api.gstillwindermerebss.workers.dev/api";
+    const PORTAL_PASS = "allofficepassattendancewrt2026";
+
+    const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    let globalOffices = [];
+    let globalAgents = [];
+    let activeLogs = new Set();
+    let currentOfficeId = null;
+    let attendanceChart = null;
+
+    // Selected Date defaults to today's date YYYY-MM-DD
+    let selectedDateStr = new Date().toISOString().split('T')[0];
+
+    // Theme Management Logic
+    function initTheme() {
+      const savedTheme = localStorage.getItem("portal_theme") || "dark";
+      applyTheme(savedTheme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+      const newTheme = currentTheme === "dark" ? "light" : "dark";
+      localStorage.setItem("portal_theme", newTheme);
+      applyTheme(newTheme);
+      if (attendanceChart) {
+        loadAttendanceLogs(); // Refresh chart styles for light/dark mode
+      }
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      const themeBtn = document.getElementById("theme-toggle-btn");
+      if (themeBtn) {
+        themeBtn.innerHTML = theme === "dark" ? "☀️ Light" : "🌙 Dark";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initTheme();
+      // Check session storage for saved auth
+      if (sessionStorage.getItem("portal_authed") === "true") {
+        unlockPortal();
+      }
+    });
+
+    // Helper: Gets Day Name (e.g., "Tuesday") from a YYYY-MM-DD string
+    function getDayNameFromDateStr(dateStr) {
+      if (!dateStr) return "";
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const dateObj = new Date(year, month - 1, day);
+      return DAYS[dateObj.getDay()];
+    }
+
+    // --- AUTHENTICATION HANDLERS ---
+    function handleAuth(e) {
+      e.preventDefault();
+      const inputPass = document.getElementById("auth-pass").value;
+      const errorMsg = document.getElementById("auth-error");
+
+      if (inputPass === PORTAL_PASS) {
+        sessionStorage.setItem("portal_authed", "true");
+        unlockPortal();
+      } else {
+        errorMsg.style.display = "block";
+        document.getElementById("auth-pass").value = "";
+      }
+    }
+
+    function unlockPortal() {
+      document.getElementById("auth-modal").style.display = "none";
+      document.getElementById("portal-app").classList.remove("hidden");
+      document.getElementById("selected-attendance-date").value = selectedDateStr;
+      initData();
+    }
+
+    function lockPortal() {
+      sessionStorage.removeItem("portal_authed");
+      document.getElementById("portal-app").classList.add("hidden");
+      document.getElementById("auth-modal").style.display = "flex";
+      document.getElementById("auth-pass").value = "";
+      document.getElementById("auth-error").style.display = "none";
+    }
+
+    async function initData() {
+      await loadAttendanceForSelectedDate();
+      await loadOffices();
+      await loadAgents();
+    }
+
+    // --- DATA FETCHING ---
+    async function loadAttendanceForSelectedDate() {
+      try {
+        const [year, month] = selectedDateStr.split('-');
+        const res = await fetch(`${API_URL}/attendance?year=${year}&month=${month}`);
+        const logs = await res.json();
+        if (Array.isArray(logs)) {
+          // Normalize comparison strings for agent IDs
+          activeLogs = new Set(
+            logs
+              .filter(l => String(l.date) === String(selectedDateStr) && Boolean(l.attended))
+              .map(l => String(l.agent_id))
+          );
+        } else {
+          activeLogs.clear();
+        }
+      } catch (e) {
+        console.error("Error loading attendance for selected date", e);
+        activeLogs.clear();
+      }
+    }
+
+    async function changeAttendanceDate(newDate) {
+      if (!newDate) return;
+      selectedDateStr = newDate;
+      await loadAttendanceForSelectedDate();
+      renderFolders();
+      if (currentOfficeId) renderOfficeView(currentOfficeId);
+    }
+
+    async function loadOffices() {
+      try {
+        const res = await fetch(`${API_URL}/offices`);
+        const data = await res.json();
+        if (!Array.isArray(data)) return;
+
+        globalOffices = data;
+        renderFolders();
+        populateOfficeDropdowns();
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadAgents() {
+      try {
+        const res = await fetch(`${API_URL}/agents`);
+        const data = await res.json();
+        if (!Array.isArray(data)) return;
+
+        globalAgents = data;
+        renderFolders();
+        if (currentOfficeId) renderOfficeView(currentOfficeId);
+      } catch (e) { console.error(e); }
+    }
+
+    // --- RENDER FOLDERS GRID ---
+    function renderFolders() {
+      const container = document.getElementById("folders-container");
+      if (globalOffices.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--muted); padding: 3rem;">No offices created yet. Click <strong>➕ New Office</strong> to start.</div>`;
+        return;
+      }
+
+      container.innerHTML = globalOffices.map(o => {
+        const officeAgents = globalAgents.filter(a => String(a.office_id) === String(o.id));
+        const attendedCount = officeAgents.filter(a => activeLogs.has(String(a.id))).length;
+        const meetingDayStr = o.meeting_day || 'Tuesday';
+
+        return `
+          <div class="folder-card" onclick="openFolder(${o.id})">
+            <div>
+              <div class="folder-header">
+                <div class="folder-title">📁 ${escape(o.office_name)}</div>
+                <span class="folder-badge">${officeAgents.length} Agents</span>
+              </div>
+              <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.35rem;">📅 Meets on ${escape(meetingDayStr)}s</p>
+            </div>
+            <div class="folder-footer">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--success-text);">
+                ${attendedCount}/${officeAgents.length} Attended
+              </span>
+              <div class="folder-actions" onclick="event.stopPropagation()">
+                <button class="btn btn-secondary btn-sm" onclick="editOffice(${o.id}, '${escape(o.office_name)}', '${escape(meetingDayStr)}')">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteOffice(${o.id})">🗑️</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // --- INSIDE FOLDER VIEW ---
+    async function openFolder(officeId) {
+      selectedDateStr = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById("selected-attendance-date");
+      if (dateInput) {
+        dateInput.value = selectedDateStr;
+      }
+      await loadAttendanceForSelectedDate();
+      renderOfficeView(officeId);
+    }
+
+    function renderOfficeView(officeId) {
+      currentOfficeId = officeId;
+      const office = globalOffices.find(o => String(o.id) === String(officeId));
+      if (!office) return;
+
+      document.getElementById("active-folder-title").innerText = `📁 ${office.office_name}`;
+      document.getElementById("home-view").classList.add("hidden");
+      document.getElementById("folder-view").classList.remove("hidden");
+
+      // Check if selected date is this office's meeting day
+      const currentDayName = getDayNameFromDateStr(selectedDateStr);
+      const meetingDayName = office.meeting_day || 'Tuesday';
+      const isMeetingDay = currentDayName.toLowerCase() === meetingDayName.toLowerCase();
+
+      const badgeContainer = document.getElementById("office-meeting-badge-container");
+      if (isMeetingDay) {
+        badgeContainer.innerHTML = `<span class="meeting-badge">🟢 Meeting Day Today</span>`;
+      } else {
+        badgeContainer.innerHTML = ``;
+      }
+
+      const officeAgents = globalAgents.filter(a => String(a.office_id) === String(officeId));
+      const container = document.getElementById("agents-list-container");
+
+      if (officeAgents.length === 0) {
+        container.innerHTML = `<p style="color: var(--muted); text-align: center; padding: 2rem;">No agents in this folder. Use the field above to add one!</p>`;
+        return;
+      }
+
+      container.innerHTML = officeAgents.map(a => {
+        const isAttended = activeLogs.has(String(a.id));
+        return `
+          <div class="agent-row">
+            <div>
+              <strong style="color: var(--heading-text); font-size: 0.95rem;">${escape(a.agent_name)}</strong>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <label class="attendance-toggle">
+                <input type="checkbox" ${isAttended ? 'checked' : ''} onchange="toggleAttendance('${a.id}', '${escape(a.agent_name)}', '${office.id}', '${escape(office.office_name)}', '${escape(office.meeting_day || 'Tuesday')}', this.checked)">
+                <span class="toggle-pill">${isAttended ? '✓ Attended' : '+ Mark Present'}</span>
+              </label>
+              <button class="btn btn-secondary btn-sm" onclick="editAgentInline('${a.id}', '${escape(a.agent_name)}')">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteAgent('${a.id}')">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function showHomeView() {
+      currentOfficeId = null;
+      document.getElementById("folder-view").classList.add("hidden");
+      document.getElementById("home-view").classList.remove("hidden");
+      renderFolders();
+    }
+
+    // --- INLINE ADD AGENT TO OPEN FOLDER ---
+    async function handleInlineAddAgent(e) {
+      e.preventDefault();
+      const input = document.getElementById("inline-agent-name");
+      const agent_name = input.value.trim();
+
+      if (!agent_name || !currentOfficeId) return;
+
+      await fetch(`${API_URL}/agents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent_name, office_id: currentOfficeId })
+      });
+
+      input.value = "";
+      await loadAgents();
+    }
+
+    async function editAgentInline(id, currentName) {
+      const agent_name = prompt("Update Agent Name:", currentName);
+      if (agent_name && agent_name !== currentName) {
+        await fetch(`${API_URL}/agents/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agent_name, office_id: currentOfficeId })
+        });
+        await loadAgents();
+      }
+    }
+
+    // --- ATTENDANCE TOGGLE LOGIC ---
+    async function toggleAttendance(agentId, agentName, officeId, officeName, meetingDay, isChecked) {
+      const agentIdStr = String(agentId);
+      if (isChecked) activeLogs.add(agentIdStr);
+      else activeLogs.delete(agentIdStr);
+
+      renderOfficeView(officeId);
+
+      await fetch(`${API_URL}/attendance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agent_id: agentIdStr,
+          agent_name: agentName,
+          office_id: officeId,
+          office_name: officeName,
+          meeting_day: meetingDay,
+          date: selectedDateStr,
+          attended: isChecked
+        })
+      });
+    }
+
+    // --- HISTORICAL ATTENDANCE LOGS & GRAPH RENDER ---
+    async function loadAttendanceLogs() {
+      const yearSelect = document.getElementById("filter-year");
+      const monthSelect = document.getElementById("filter-month");
+      const officeSelect = document.getElementById("filter-office");
+      const filterMeetingOnly = document.getElementById("filter-meeting-days-only").checked;
+
+      const year = yearSelect.value;
+      const month = monthSelect.value;
+      const office_id = officeSelect.value;
+
+      const params = new URLSearchParams();
+      if (year) params.append("year", year);
+      if (month) params.append("month", month);
+      if (office_id) params.append("office_id", office_id);
+
+      try {
+        const res = await fetch(`${API_URL}/attendance?${params.toString()}`);
+        let logs = await res.json();
+
+        if (!Array.isArray(logs)) logs = [];
+
+        // Filter out non-attended records if soft deletes exist
+        logs = logs.filter(l => Boolean(l.attended));
+
+        // Apply frontend filtering for "Meeting Days Only" if selected
+        if (filterMeetingOnly) {
+          logs = logs.filter(log => {
+            const logDay = getDayNameFromDateStr(log.date);
+            const targetOffice = globalOffices.find(o => String(o.id) === String(log.office_id));
+            const officeMeetingDay = targetOffice ? targetOffice.meeting_day : (log.meeting_day || "Tuesday");
+            return logDay.toLowerCase() === (officeMeetingDay || "Tuesday").toLowerCase();
+          });
+        }
+
+        const tbody = document.getElementById("attendance-logs-body");
+        
+        if (logs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--muted); padding: 2rem;">No logs found for the selected filters.</td></tr>`;
+          document.getElementById("metric-percentage").innerText = "0%";
+          document.getElementById("metric-total-records").innerText = "0";
+          document.getElementById("office-percentage-breakdown").style.display = "none";
+          renderGraph([], year, month);
+          return;
+        }
+
+        // Render Logs Table
+        tbody.innerHTML = logs.map(l => `
+          <tr>
+            <td><strong>${escape(l.agent_name)}</strong></td>
+            <td>${escape(l.office_name)}</td>
+            <td style="color: var(--primary); font-weight: 600;">${l.date} (${getDayNameFromDateStr(l.date)})</td>
+            <td style="text-align: right;">
+              <button class="btn btn-danger btn-sm" title="Delete Log" onclick="removeAttendanceLog('${l.agent_id}', '${l.date}', '${l.office_id}')">🗑️ Delete</button>
+            </td>
+          </tr>
+        `).join("");
+
+        // Calculate and display percentage metrics
+        calculatePercentageMetrics(logs, office_id, filterMeetingOnly);
+
+        renderGraph(logs, year, month);
+
+      } catch (err) {
+        console.error("Failed to fetch attendance logs:", err);
+      }
+    }
+
+    // --- CALCULATE ATTENDANCE PERCENTAGE METRICS ---
+    function calculatePercentageMetrics(logs, selectedOfficeId, filterMeetingOnly) {
+      document.getElementById("metric-total-records").innerText = logs.length;
+
+      let relevantAgents = globalAgents;
+      if (selectedOfficeId) {
+        relevantAgents = globalAgents.filter(a => String(a.office_id) === String(selectedOfficeId));
+      }
+
+      const uniqueDates = new Set(logs.map(l => l.date)).size || 1;
+      const totalPossibleCheckins = relevantAgents.length * uniqueDates;
+
+      if (totalPossibleCheckins > 0) {
+        const rate = ((logs.length / totalPossibleCheckins) * 100).toFixed(1);
+        document.getElementById("metric-percentage").innerText = `${rate}%`;
+      } else {
+        document.getElementById("metric-percentage").innerText = "0%";
+      }
+
+      // Render Breakdown per office if "All Offices" is selected
+      const breakdownBox = document.getElementById("office-percentage-breakdown");
+      const breakdownBody = document.getElementById("office-percentage-body");
+
+      if (!selectedOfficeId && globalOffices.length > 0) {
+        breakdownBox.style.display = "block";
+        
+        breakdownBody.innerHTML = globalOffices.map(off => {
+          const officeAgents = globalAgents.filter(a => String(a.office_id) === String(off.id));
+          const officeLogs = logs.filter(l => String(l.office_id) === String(off.id));
+          
+          let officeUniqueDates = new Set(officeLogs.map(l => l.date)).size;
+          if (officeUniqueDates === 0 && logs.length > 0) {
+            officeUniqueDates = 1;
+          }
+
+          const possible = officeAgents.length * (officeUniqueDates || 1);
+          
+          let pct = "0.0%";
+          if (possible > 0 && officeLogs.length > 0) {
+            pct = `${((officeLogs.length / possible) * 100).toFixed(1)}%`;
+          }
+
+          return `
+            <tr>
+              <td><strong>📁 ${escape(off.office_name)}</strong></td>
+              <td>${escape(off.meeting_day || 'Tuesday')}s</td>
+              <td>${officeAgents.length} Agents</td>
+              <td>${officeLogs.length} Check-ins</td>
+              <td style="text-align: right; font-weight: 700; color: var(--success-text);">${pct}</td>
+            </tr>
+          `;
+        }).join("");
+      } else {
+        breakdownBox.style.display = "none";
+      }
+    }
+
+    // --- RENDER DYNAMIC CHART ---
+    function renderGraph(logs, selectedYear, selectedMonth) {
+      const ctx = document.getElementById('attendanceChart').getContext('2d');
+      const isLight = document.documentElement.getAttribute("data-theme") === "light";
+      
+      const primaryColor = isLight ? '#0284c7' : '#38bdf8';
+      const borderColor = isLight ? '#0369a1' : '#0284c7';
+      const gridColor = isLight ? '#e2e8f0' : '#334155';
+      const textColor = isLight ? '#64748b' : '#94a3b8';
+      const tooltipBg = isLight ? '#ffffff' : '#1e293b';
+      const tooltipText = isLight ? '#0f172a' : '#f8fafc';
+
+      let labels = [];
+      let counts = [];
+
+      if (!selectedMonth) {
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        labels = monthNames;
+        counts = new Array(12).fill(0);
+
+        logs.forEach(log => {
+          const mIndex = parseInt(log.date.split('-')[1], 10) - 1;
+          if (mIndex >= 0 && mIndex < 12) counts[mIndex]++;
+        });
+      } else {
+        const daysInMonth = new Date(selectedYear || new Date().getFullYear(), parseInt(selectedMonth, 10), 0).getDate();
+        labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+        counts = new Array(daysInMonth).fill(0);
+
+        logs.forEach(log => {
+          const dayIndex = parseInt(log.date.split('-')[2], 10) - 1;
+          if (dayIndex >= 0 && dayIndex < daysInMonth) counts[dayIndex]++;
+        });
+      }
+
+      if (attendanceChart) {
+        attendanceChart.destroy();
+      }
+
+      attendanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: selectedMonth ? 'Daily Attendance' : 'Monthly Attendance',
+            data: counts,
+            backgroundColor: primaryColor,
+            borderColor: borderColor,
+            borderWidth: 1,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: tooltipBg,
+              titleColor: tooltipText,
+              bodyColor: primaryColor,
+              borderColor: gridColor,
+              borderWidth: 1
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 11 } }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0, color: textColor, font: { family: 'Plus Jakarta Sans', size: 11 } },
+              grid: { color: gridColor }
+            }
+          }
+        }
+      });
+    }
+
+    async function removeAttendanceLog(agentId, date, officeId) {
+      if (confirm(`Remove attendance record for this date (${date})?`)) {
+        await fetch(`${API_URL}/attendance`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agent_id: String(agentId),
+            date: date,
+            office_id: officeId,
+            attended: false
+          })
+        });
+
+        if (date === selectedDateStr) {
+          activeLogs.delete(String(agentId));
+          renderFolders();
+          if (currentOfficeId) renderOfficeView(currentOfficeId);
+        }
+
+        loadAttendanceLogs();
+      }
+    }
+
+    // --- OFFICE ACTIONS ---
+    document.getElementById("office-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("office-id").value;
+      const office_name = document.getElementById("office-name").value.trim();
+      const meeting_day = document.getElementById("office-meeting-day").value;
+
+      const method = id ? "PUT" : "POST";
+      const url = id ? `${API_URL}/offices/${id}` : `${API_URL}/offices`;
+
+      await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ office_name, meeting_day })
+      });
+
+      closeModal("office-modal");
+      initData();
+    });
+
+    function editOffice(id, name, meetingDay) {
+      document.getElementById("office-id").value = id;
+      document.getElementById("office-name").value = name;
+      document.getElementById("office-meeting-day").value = meetingDay || "Tuesday";
+      document.getElementById("office-modal-title").innerText = "Edit Office";
+      openModal("office-modal");
+    }
+
+    async function deleteOffice(id) {
+      if (confirm("Delete this office and all associated agents?")) {
+        await fetch(`${API_URL}/offices/${id}`, { method: "DELETE" });
+        if (String(currentOfficeId) === String(id)) showHomeView();
+        initData();
+      }
+    }
+
+    async function deleteAgent(id) {
+      if (confirm("Delete this agent?")) {
+        await fetch(`${API_URL}/agents/${id}`, { method: "DELETE" });
+        initData();
+      }
+    }
+
+    // --- MODAL UTILS ---
+    function openModal(id) {
+      if (id === 'attendance-modal') {
+        const currentYear = new Date().getFullYear();
+        const yearSelect = document.getElementById("filter-year");
+
+        let yearOptions = `<option value="">All Years</option>`;
+        for (let y = currentYear; y >= 2025; y--) {
+          yearOptions += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`;
+        }
+        yearSelect.innerHTML = yearOptions;
+
+        loadAttendanceLogs();
+      }
+      document.getElementById(id).style.display = "flex";
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = "none";
+      if (id === 'office-modal') {
+        document.getElementById("office-id").value = "";
+        document.getElementById("office-name").value = "";
+        document.getElementById("office-meeting-day").value = "Tuesday";
+      }
+    }
+
+    function populateOfficeDropdowns() {
+      const select = document.getElementById("filter-office");
+      select.innerHTML = `<option value="">All Offices</option>` + 
+        globalOffices.map(o => `<option value="${o.id}">${escape(o.office_name)}</option>`).join("");
+    }
+
+    function escape(str) {
+      return str ? String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
+    }
+  </script>
+</body>
+</html>
